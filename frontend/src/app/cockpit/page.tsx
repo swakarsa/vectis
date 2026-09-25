@@ -52,6 +52,7 @@ const getMiniMapNodeColor = (n: Node) => {
 export default function VectisCockpitPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [mounted, setMounted] = useState(false);
 
   const [mode, setMode] = useState<"benchmark" | "live_github">("benchmark");
   const [repoName, setRepoName] = useState("swakarsa/vectis");
@@ -117,8 +118,9 @@ export default function VectisCockpitPage() {
     setEdges(flowEdges);
   }, [setNodes, setEdges]);
 
-  // Initial load
+  // Initial load & client mount
   useEffect(() => {
+    setMounted(true);
     async function init() {
       try {
         const res = await fetch(`${API_BASE}/api/graph`);
@@ -356,6 +358,17 @@ export default function VectisCockpitPage() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (!mounted) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#08090a]">
+        <div className="flex items-center gap-2.5 text-xs text-zinc-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-sans font-medium">Initializing Vectis Cockpit...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#08090a] overflow-hidden select-none">
