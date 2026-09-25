@@ -1,6 +1,13 @@
 import json
 import logging
+import sys
+from pathlib import Path
 from typing import List, Dict, Any, Optional
+
+# Ensure the backend directory is in sys.path when running this script directly
+BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 try:
     from mcp.server.fastmcp import FastMCP, Context
@@ -55,8 +62,7 @@ def run_blast_analysis(
 if HAS_MCP:
     mcp = FastMCP(
         name="vectis-sentinel",
-        title="Vectis Sentinel Engine",
-        description="FastMCP Server for Monorepo Blast Radius and Shim Synthesis"
+        instructions="FastMCP Server for Monorepo Blast Radius and Shim Synthesis"
     )
 
     @mcp.tool()
