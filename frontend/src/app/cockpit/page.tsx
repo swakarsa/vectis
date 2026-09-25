@@ -53,6 +53,15 @@ export default function VectisCockpitPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
+  const [mode, setMode] = useState<"benchmark" | "live_github">("benchmark");
+  const [repoName, setRepoName] = useState("swakarsa/vectis");
+  const [prNumber, setPrNumber] = useState(482);
+  const [baseBranch, setBaseBranch] = useState("main");
+  const [headBranch, setHeadBranch] = useState("feature/refactor-auth");
+  const [checksStatus, setChecksStatus] = useState<"idle" | "in_progress" | "failure" | "success">("idle");
+  const [mergeLocked, setMergeLocked] = useState(false);
+  const [pushedToPR, setPushedToPR] = useState(false);
+
   const [verdict, setVerdict] = useState<"BLOCK" | "WARN" | "PASS" | "IDLE">("IDLE");
   const [riskScore, setRiskScore] = useState<number>(0.0);
   const [loading, setLoading] = useState(false);
@@ -126,24 +135,37 @@ export default function VectisCockpitPage() {
     init();
   }, [setupGraphNodes]);
 
-  // Execute Pre-Merge Gate Audit
+  // Execute Pre-Merge Gate Audit (Benchmark or Live GitHub)
   const handleAnalyze = async () => {
     setLoading(true);
     setShimApplied(false);
     setReleasePassport(null);
+    setChecksStatus("in_progress");
+    setPushedToPR(false);
 
     try {
       let data: any = null;
       try {
-        const res = await fetch(`${API_BASE}/api/analyze-pr`, {
+        const endpoint = mode === "live_github" ? `${API_BASE}/api/github/audit-pr` : `${API_BASE}/api/analyze-pr`;
+        const bodyPayload = mode === "live_github"
+          ? {
+              repository: repoName,
+              pr_number: prNumber,
+              base_ref: baseBranch,
+              head_ref: headBranch,
+              changed_files: ["src/auth/session.ts"],
+            }
+          : {
+              repo_path: "",
+              base_ref: "main",
+              head_ref: "feature/refactor-auth",
+              changed_files: ["src/auth/session.ts"],
+            };
+
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            repo_path: "",
-            base_ref: "main",
-            head_ref: "feature/refactor-auth",
-            changed_files: ["src/auth/session.ts"],
-          }),
+          body: JSON.stringify(bodyPayload),
         });
         if (res.ok) {
           data = await res.json();
@@ -190,6 +212,8 @@ export default function VectisCockpitPage() {
       setRiskScore(data.risk_assessment.total_score);
       setBreakingChanges(data.breaking_changes);
       setDownstreamImpact(data.downstream_impact);
+      setChecksStatus(data.verdict === "BLOCK" ? "failure" : "success");
+      setMergeLocked(data.verdict === "BLOCK");
 
       // Map node states
       const stateMap: Record<string, "default" | "source" | "impacted" | "healed"> = {
@@ -282,6 +306,9 @@ export default function VectisCockpitPage() {
       setRiskScore(data.risk_assessment.total_score);
       setShimCode(data.shim_code);
       setReleasePassport(data.release_passport);
+      setChecksStatus("success");
+      setMergeLocked(false);
+      setPushedToPR(true);
 
       // Transition nodes to healed
       setNodes((currentNodes) =>
@@ -340,12 +367,84 @@ export default function VectisCockpitPage() {
         onAnalyze={handleAnalyze}
         onDownloadPassport={handleDownloadPassport}
         passportAvailable={shimApplied && Boolean(releasePassport)}
+        mode={mode}
+        onModeChange={setMode}
+        activeRepo={repoName}
+        activePR={prNumber}
       />
 
       {/* Main Workspace: 65% DAG Canvas + 35% Sentry Detail Panel */}
       <div className="flex-1 flex overflow-hidden">
         {/* Graph Canvas */}
         <div className="flex-1 h-full relative bg-[#08090a]">
+          {/* Live GitHub PR Toolbar */}
+          {mode === "live_github" && (
+            <div className="absolute top-4 left-4 right-4 z-10 bg-[#101116]/95 backdrop-blur-md border border-white/[0.1] rounded-[6px] p-3 shadow-2xl flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-300">
+                  <span className="text-zinc-500 font-medium">Repo:</span>
+                  <input
+                    type="text"
+                    value={repoName}
+                    onChange={(e) => setRepoName(e.target.value)}
+                    className="bg-[#181a20] border border-white/[0.08] rounded-[4px] px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500/50 w-36 font-sans font-medium"
+                    placeholder="owner/repo"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-zinc-300">
+                  <span className="text-zinc-500 font-medium">PR:</span>
+                  <input
+                    type="number"
+                    value={prNumber}
+                    onChange={(e) => setPrNumber(Number(e.target.value))}
+                    className="bg-[#181a20] border border-white/[0.08] rounded-[4px] px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500/50 w-16 font-sans font-medium"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-zinc-300">
+                  <span className="text-zinc-500 font-medium">Branch:</span>
+                  <input
+                    type="text"
+                    value={headBranch}
+                    onChange={(e) => setHeadBranch(e.target.value)}
+                    className="bg-[#181a20] border border-white/[0.08] rounded-[4px] px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500/50 w-44 font-sans font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Status & Enforcement Indicator */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-[4px] bg-black/40 border border-white/[0.06] text-xs">
+                  <span className="text-zinc-500">GitHub Checks API:</span>
+                  {checksStatus === "failure" ? (
+                    <span className="text-rose-400 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                      FAILURE (Merge Blocked)
+                    </span>
+                  ) : checksStatus === "success" ? (
+                    <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      SUCCESS (Merge Unlocked)
+                    </span>
+                  ) : checksStatus === "in_progress" ? (
+                    <span className="text-amber-400 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-spin" />
+                      Auditing PR Diff...
+                    </span>
+                  ) : (
+                    <span className="text-zinc-400 font-sans font-medium">LISTENING (Webhook 200 OK)</span>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleAnalyze}
+                  disabled={loading}
+                  className="px-3 py-1 bg-white text-black hover:bg-zinc-200 text-xs font-semibold rounded-[4px] transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {loading ? "Auditing..." : "Audit Live PR Diff"}
+                </button>
+              </div>
+            </div>
+          )}
           <ReactFlow
             nodes={nodes}
             edges={edges}

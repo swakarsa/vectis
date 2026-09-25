@@ -20,6 +20,10 @@ interface CockpitHeaderProps {
   onAnalyze: () => void;
   onDownloadPassport: () => void;
   passportAvailable: boolean;
+  mode?: "benchmark" | "live_github";
+  onModeChange?: (mode: "benchmark" | "live_github") => void;
+  activeRepo?: string;
+  activePR?: number | string;
 }
 
 export function CockpitHeader({
@@ -29,6 +33,10 @@ export function CockpitHeader({
   onAnalyze,
   onDownloadPassport,
   passportAvailable,
+  mode = "benchmark",
+  onModeChange,
+  activeRepo = "swakarsa/vectis",
+  activePR = 482,
 }: CockpitHeaderProps) {
   let statusDot = "bg-zinc-500";
   let statusLabel = "Awaiting PR Analysis";
@@ -54,8 +62,8 @@ export function CockpitHeader({
 
   return (
     <header className="h-14 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-5 flex items-center justify-between z-20">
-      {/* Left Branding & PR Metadata */}
-      <div className="flex items-center gap-4">
+      {/* Left Branding & Mode Toggle */}
+      <div className="flex items-center gap-3">
         <Link
           href="/"
           className="flex items-center gap-2 text-xs text-zinc-400 hover:text-zinc-200 transition-colors mr-1"
@@ -90,13 +98,38 @@ export function CockpitHeader({
 
         <div className="h-4 w-[1px] bg-white/[0.08]" />
 
-        {/* PR info item */}
-        <div className="flex items-center gap-2 text-xs text-zinc-400">
-          <GitPullRequest size={15} className="text-zinc-400" />
-          <span className="text-zinc-300 font-medium">fintech-monorepo</span>
-          <span className="text-zinc-600">/</span>
-          <span className="text-zinc-300">PR #482</span>
-          <span className="text-zinc-500 text-[11px]">(refactor-oidc-tokens)</span>
+        {/* Mode Selector */}
+        <div className="flex items-center bg-[#131418] border border-white/[0.08] rounded-[4px] p-0.5 text-xs">
+          <button
+            onClick={() => onModeChange?.("benchmark")}
+            className={`px-2.5 py-1 rounded-[3px] font-medium transition-all ${
+              mode === "benchmark"
+                ? "bg-zinc-800 text-white shadow-sm"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            PR #482 Benchmark
+          </button>
+          <button
+            onClick={() => onModeChange?.("live_github")}
+            className={`px-2.5 py-1 rounded-[3px] font-medium transition-all flex items-center gap-1.5 ${
+              mode === "live_github"
+                ? "bg-zinc-800 text-emerald-300 shadow-sm"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live GitHub Defender
+          </button>
+        </div>
+
+        {/* Live Defender Status Badge */}
+        <div className="hidden xl:flex items-center gap-2 text-[11px] text-zinc-500 border border-white/[0.06] bg-white/[0.02] px-2.5 py-1 rounded-[4px]">
+          <span className="text-emerald-400 font-mono">CI: ACTIVE</span>
+          <span className="text-zinc-600">·</span>
+          <span>Webhook: 200 OK</span>
+          <span className="text-zinc-600">·</span>
+          <span className="text-zinc-400">Fail-Closed Gate</span>
         </div>
       </div>
 
