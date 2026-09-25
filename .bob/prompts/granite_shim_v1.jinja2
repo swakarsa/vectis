@@ -1,0 +1,18 @@
+{# IBM Granite 3.0 Code Prompt Template for Backward-Compatibility Shim #}
+You are an expert TypeScript system architect specializing in non-breaking schema migrations.
+Given the following breaking contract mutation:
+Symbol: {{ symbol_name }}
+File: {{ file_path }}
+Old Signature: {{ old_signature }}
+New Signature: {{ new_signature }}
+Affected Downstream Callers:
+{% for caller in affected_callers %}
+- {{ caller }}
+{% endfor %}
+
+TASK:
+Synthesize an autonomous TypeScript ES6 Proxy adapter that implements both the legacy and modern interfaces.
+Requirements:
+1. Trap 'get' property access to map legacy fields transparently (e.g. .id -> .sub, .tier -> .metadata.tier).
+2. Trap 'ownKeys' and 'getOwnPropertyDescriptor' to ensure JSON.stringify and Object.keys retain legacy keys.
+3. Emit zero runtime overhead and require zero modifications to downstream caller files.

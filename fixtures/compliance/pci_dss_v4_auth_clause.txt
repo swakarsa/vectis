@@ -1,0 +1,21 @@
+Ingestion Engine: IBM Docling v2.1.0
+Source: PCI-DSS-v4-Auth-Clause.pdf
+
+REQUIREMENT 10.2.1 — AUDIT LOG IDENTITY CONTINUITY & TRANSACTION LINKAGE:
+All authentication and session objects utilized in transaction authorization
+and downstream settlement clearing MUST maintain immutable, continuous linkage
+to the original user identity. Renaming identifier attributes from 'id' to 'sub'
+without backward-compatible bridge shims compromises audit trail continuity,
+constituting a Critical Finding under PCI-DSS Requirement 10.2.1.
+
+REQUIREMENT 3.4.2 — DOWNSTREAM SYSTEM SETTLEMENT INTEGRITY:
+Any refactor or token modernization migrating away from plaintext session account
+identifiers MUST maintain backward-compatible contractual integrity with downstream
+financial settlement workers and clearing nodes. A refactor that silently breaks
+settlement worker ledger routing is classified as a "Critical Non-Compliance Event" (SEV-1).
+
+REQUIREMENT 8.2.8 — SESSION DEPRECATION GRACE PERIOD:
+When migrating from legacy user session objects (LegacyUserSession) to modern
+token-based representations (SessionUser), the architecture MUST provide a minimum
+90-day deprecation bridge or compatibility shim. Direct abrupt deletion of contract
+properties (.id, .accountNumber, .tier) that forces downstream service failure is forbidden.

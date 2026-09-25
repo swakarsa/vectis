@@ -4,6 +4,9 @@
 *.pem
 credentials.json
 ibm-credentials.env
+TASK.md
+*BLUEPRINT*.md
+docs/
 node_modules/
 dist/
 build/

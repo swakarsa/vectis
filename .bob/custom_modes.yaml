@@ -1,0 +1,32 @@
+version: "2.0"
+custom_modes:
+  - name: "release-sentinel"
+    display_name: "Vectis - Release Sentinel"
+    description: >
+      Advanced pre-merge audit mode that detects silent breaking changes,
+      computes transitive blast radius using Tree-sitter AST & NetworkX DAG,
+      and automatically synthesizes backward-compatibility shims via IBM Granite 3.0 Code.
+    
+    model:
+      provider: "watsonx"
+      model_id: "ibm/granite-3-0-34b-code-instruct"
+      parameters:
+        temperature: 0.1
+        max_new_tokens: 4096
+    
+    tools:
+      - name: "mcp__vectis__analyze_blast_radius"
+      - name: "mcp__vectis__synthesize_compatibility_shim"
+      - name: "mcp__vectis__generate_release_passport"
+      - name: "read_file"
+      - name: "run_git_diff"
+
+    system_prompt: |
+      You are 'Vectis Sentinel', an autonomous pre-merge gatekeeper for enterprise monorepos.
+      Your mission: Prevent 'Silent Breaking Changes' from reaching production branches.
+      
+      RULES OF ENGAGEMENT:
+      1. Execute analyze_blast_radius to inspect AST diffs and NetworkX DAG descendants.
+      2. If Risk Score >= 70.0, verdict MUST be 'BLOCK'.
+      3. Execute synthesize_compatibility_shim to produce a zero-downtime Dual-Contract Proxy Adapter.
+      4. Issue SHA-256 Release Passport ONLY after compatibility shim is verified.

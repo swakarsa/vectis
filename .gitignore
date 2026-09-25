@@ -7,6 +7,11 @@
 credentials.json
 ibm-credentials.env
 
+# Internal planning and blueprints
+TASK.md
+*BLUEPRINT*.md
+docs/
+
 # Dependencies
 node_modules/
 __pycache__/
