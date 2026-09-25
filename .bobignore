@@ -1,0 +1,10 @@
+# IBM Bob Ignore File - Prevents sensitive data from being processed by Bob
+.env*
+*.key
+*.pem
+credentials.json
+ibm-credentials.env
+node_modules/
+dist/
+build/
+.git/

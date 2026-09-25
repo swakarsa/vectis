@@ -1,0 +1,28 @@
+# Environment variables and secrets
+.env
+.env*.local
+*.env
+*.key
+*.pem
+credentials.json
+ibm-credentials.env
+
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+env/
+venv/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
