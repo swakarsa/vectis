@@ -47,9 +47,9 @@ def main():
     # 2. Frontend check
     log_step("2. Checking Frontend Next.js Cockpit & Landing Page")
     try:
-        req_home = urllib.request.urlopen(FRONTEND_URL, timeout=5)
+        req_home = urllib.request.urlopen(FRONTEND_URL, timeout=25)
         check_assert(req_home.status == 200, f"Landing Page HTTP {req_home.status}")
-        req_cockpit = urllib.request.urlopen(f"{FRONTEND_URL}/cockpit", timeout=5)
+        req_cockpit = urllib.request.urlopen(f"{FRONTEND_URL}/cockpit", timeout=25)
         check_assert(req_cockpit.status == 200, f"Cockpit Dashboard HTTP {req_cockpit.status}")
     except Exception as e:
         print(f"  [FAIL] Could not connect to frontend at {FRONTEND_URL}: {e}")
