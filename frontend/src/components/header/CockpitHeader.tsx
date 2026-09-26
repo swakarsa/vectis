@@ -204,10 +204,10 @@ export function CockpitHeader({
                 <button
                   onClick={onResetToBreaking}
                   className="h-7 px-2.5 rounded-[3px] border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-                  title="Inject breaking contract mutations to simulate an unsafe, dangerous release"
+                  title="Simulate repo in dangerous hazard state"
                 >
                   <ShieldWarning size={13} weight="bold" className="text-rose-400 shrink-0" />
-                  <span>Inject Breaking Drift</span>
+                  <span>Inject Hazard</span>
                 </button>
               )}
             </div>
