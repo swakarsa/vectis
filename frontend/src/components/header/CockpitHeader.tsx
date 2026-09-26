@@ -134,11 +134,11 @@ export function CockpitHeader({
       <div className="flex items-center gap-2.5">
         <GitHubAuthButton />
 
-        {shimApplied && onResetToBreaking && (
+        {mode === "benchmark" && shimApplied && onResetToBreaking && (
           <button
             onClick={onResetToBreaking}
             className="h-8 px-2.5 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-medium text-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer"
-            title="Re-inject breaking contract mutations to test the blocker again"
+            title="Re-inject breaking contract mutations to test the blocker again (Jury Simulation Sandbox only)"
           >
             <ShieldWarning size={13} className="text-rose-400" />
             <span>Re-inject Drift</span>
