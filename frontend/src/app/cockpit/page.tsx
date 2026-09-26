@@ -223,6 +223,13 @@ export default function VectisCockpitPage() {
 
       // In Benchmark mode, pre-load hazard coloring on cold start
       if (mode === "benchmark" && !shimApplied) {
+        setBreakingChanges(BENCHMARK_BREAKING_CHANGES);
+        setDownstreamImpact(BENCHMARK_DOWNSTREAM_IMPACT);
+        setVerdict("BLOCK");
+        setRiskScore(84.0);
+        setChecksStatus("failure");
+        setMergeLocked(true);
+
         const benchmarkStateMap: Record<string, "default" | "source" | "impacted" | "healed"> = {
           "auth/session.ts": "source",
           "payments/checkout.ts": "impacted",
@@ -506,6 +513,8 @@ export default function VectisCockpitPage() {
     setRiskScore(84.0);
     setChecksStatus("failure");
     setMergeLocked(true);
+    setBreakingChanges(BENCHMARK_BREAKING_CHANGES);
+    setDownstreamImpact(BENCHMARK_DOWNSTREAM_IMPACT);
 
     // Hazard states
     const stateMap: Record<string, "default" | "source" | "impacted" | "healed"> = {
@@ -848,19 +857,27 @@ export default function VectisCockpitPage() {
           setShimApplied(false);
           setReleasePassport(null);
           setPushedToPR(false);
-          setVerdict("IDLE");
-          setRiskScore(0.0);
-          setChecksStatus("idle");
-          setMergeLocked(false);
           if (m === "benchmark") {
             setRepoName("swakarsa/fintech-monorepo");
             setPrNumber(482);
             setHeadBranch("feature/refactor-auth");
             setHeadSha("c8a9f24e9b7d81023");
+            setVerdict("BLOCK");
+            setRiskScore(84.0);
+            setChecksStatus("failure");
+            setMergeLocked(true);
+            setBreakingChanges(BENCHMARK_BREAKING_CHANGES);
+            setDownstreamImpact(BENCHMARK_DOWNSTREAM_IMPACT);
           } else {
             setRepoName("swakarsa/vectis");
             setHeadBranch("main");
             setHeadSha("1c3573795e042a8e7f2d65c39163ef237175c214");
+            setVerdict("IDLE");
+            setRiskScore(0.0);
+            setChecksStatus("idle");
+            setMergeLocked(false);
+            setBreakingChanges([]);
+            setDownstreamImpact([]);
           }
         }}
         activeRepo={repoName}

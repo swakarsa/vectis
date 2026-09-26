@@ -351,9 +351,11 @@ export function DetailPanel({
                 <div className="w-9 h-9 rounded-[6px] bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-zinc-500 mb-2.5">
                   <TerminalWindow size={18} />
                 </div>
-                <div className="text-xs font-medium text-zinc-300 mb-1">Awaiting Gate Audit</div>
+                <div className="text-xs font-medium text-zinc-300 mb-1">
+                  {verdict === "PASS" ? "All Contract Signatures Intact" : "Awaiting Gate Audit"}
+                </div>
                 <p className="text-[11px] text-zinc-500 max-w-[220px] leading-relaxed">
-                  Click <span className="text-zinc-300 font-medium">Run Gate Audit</span> to detect breaking contract mutations.
+                  {verdict === "PASS" ? "Zero breaking mutations detected across interface definitions." : "Click Run Gate Audit to detect breaking contract mutations."}
                 </p>
               </div>
             ) : (
@@ -400,9 +402,11 @@ export function DetailPanel({
                 <div className="w-9 h-9 rounded-[6px] bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-zinc-500 mb-2.5">
                   <TreeStructure size={18} />
                 </div>
-                <div className="text-xs font-medium text-zinc-300 mb-1">No Blast Radius Detected</div>
+                <div className="text-xs font-medium text-zinc-300 mb-1">
+                  {verdict === "PASS" ? "All Downstream Services Safe" : "No Blast Radius Detected"}
+                </div>
                 <p className="text-[11px] text-zinc-500 max-w-[220px] leading-relaxed">
-                  Downstream dependencies and caller risks will populate after running audit.
+                  {verdict === "PASS" ? "Zero callers affected by current release changeset." : "Downstream dependencies and caller risks will populate after running audit."}
                 </p>
               </div>
             ) : (
@@ -447,9 +451,35 @@ export function DetailPanel({
               </p>
             </div>
 
+            {/* Real-time Hazard Awareness Breakdown */}
+            <div className="p-3 rounded-[4px] bg-[#121318] border border-white/[0.08] space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-zinc-200">
+                  Active Hazards Targeted by Auto-Heal:
+                </span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium tabular-nums ${shimApplied ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-rose-500/20 text-rose-300 border border-rose-500/30"}`}>
+                  {shimApplied ? "HEALED & COMPLIANT" : "2 MUTATIONS CRITICAL"}
+                </span>
+              </div>
+              <div className="space-y-1 text-[11px]">
+                <div className="flex items-start gap-1.5 text-zinc-300">
+                  <span className="text-rose-400 font-bold">•</span>
+                  <span><strong className="text-rose-300">User.id</strong> removed & renamed to <code className="text-zinc-200">sub</code> in <span className="text-zinc-400">src/auth/session.ts</span></span>
+                </div>
+                <div className="flex items-start gap-1.5 text-zinc-300">
+                  <span className="text-rose-400 font-bold">•</span>
+                  <span><strong className="text-rose-300">User.tier</strong> relocated inside <code className="text-zinc-200">metadata.tier</code></span>
+                </div>
+              </div>
+              <div className="pt-1.5 border-t border-white/[0.04] text-[10px] text-zinc-400 flex items-center justify-between">
+                <span>Protected Downstream Callers:</span>
+                <span className="text-zinc-300 font-medium">4 Services (Billing, Settlement, Invoicing, API)</span>
+              </div>
+            </div>
+
             <div className="relative border border-white/[0.08] rounded-[4px] bg-[#08090b] p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] tabular-nums font-sans text-zinc-500">auth_adapter.ts</span>
+                <span className="text-[10px] tabular-nums font-sans text-zinc-500">auth_adapter.ts (Granite Proxy)</span>
                 <button
                   onClick={copyShim}
                   className="text-[11px] text-zinc-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
@@ -505,43 +535,106 @@ export function DetailPanel({
           </div>
         )}
 
-        {/* TAB 4: COMPLIANCE (DOCLING) */}
+        {/* TAB 4: COMPLIANCE (DOCLING) - 100% REAL-TIME REACTIVE */}
         {activeTab === "compliance" && (
           <div className="space-y-3">
-            <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-[4px] space-y-1.5">
+            <div
+              className={`p-3 rounded-[4px] space-y-1.5 border ${
+                shimApplied || verdict === "PASS"
+                  ? "bg-emerald-500/10 border-emerald-500/20"
+                  : "bg-rose-500/10 border-rose-500/20"
+              }`}
+            >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400">
+                <div
+                  className={`flex items-center gap-1.5 text-xs font-semibold ${
+                    shimApplied || verdict === "PASS" ? "text-emerald-400" : "text-rose-400"
+                  }`}
+                >
                   <Scales size={14} />
-                  <span>PCI-DSS v4.0.1 Compliance</span>
+                  <span>
+                    {shimApplied || verdict === "PASS"
+                      ? "PCI-DSS v4.0.1 Compliance Attestation"
+                      : "PCI-DSS v4.0.1 Compliance Alert"}
+                  </span>
                 </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-[2px] bg-indigo-500/20 text-indigo-300 tabular-nums font-sans">
-                  IBM DOCLING
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-[2px] tabular-nums font-sans font-medium ${
+                    shimApplied || verdict === "PASS"
+                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                      : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                  }`}
+                >
+                  {shimApplied || verdict === "PASS"
+                    ? "FULLY COMPLIANT · SHIM VERIFIED"
+                    : "2 ACTIVE REGULATORY VIOLATIONS"}
                 </span>
               </div>
               <p className="text-[11px] text-zinc-300 leading-relaxed">
-                Extracted directly from regulatory mandate <span className="text-white">PCI-DSS-v4-Auth-Clause.pdf</span>.
+                {shimApplied || verdict === "PASS"
+                  ? "Docling validated that the IBM Granite 3.0 ES6 Proxy adapter satisfies audit continuity and prevents settlement disruption. All regulatory clauses satisfied."
+                  : "Docling extracted compliance rules from regulatory mandate PCI-DSS-v4-Auth-Clause.pdf. Current PR violates financial audit standards; merge is legally blocked."}
               </p>
             </div>
 
             <div className="space-y-2 text-xs">
               <div className="p-3 rounded-[4px] bg-[#121318] border border-white/[0.08] space-y-1">
-                <div className="font-semibold text-zinc-200">Req 10.2.1: Audit Identity Continuity</div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-zinc-200">Req 10.2.1: Audit Identity Continuity</span>
+                  <span
+                    className={`text-[10px] font-semibold px-1 py-0.5 rounded-[2px] ${
+                      shimApplied || verdict === "PASS"
+                        ? "text-emerald-400 bg-emerald-500/10"
+                        : "text-rose-400 bg-rose-500/10"
+                    }`}
+                  >
+                    {shimApplied || verdict === "PASS" ? "SATISFIED" : "CRITICAL VIOLATION"}
+                  </span>
+                </div>
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Renaming identifier attributes from <code className="text-rose-400">id</code> to <code className="text-emerald-400">sub</code> without backward-compatible shims breaks transaction audit trail linkage.
+                  {shimApplied || verdict === "PASS"
+                    ? "ES6 Proxy getter interceptor dynamically maps legacy User.id to modern sub. Transaction audit trail continuity preserved."
+                    : "Renaming identifier attributes from id to sub without backward-compatible shims breaks transaction audit trail linkage."}
                 </p>
               </div>
 
               <div className="p-3 rounded-[4px] bg-[#121318] border border-white/[0.08] space-y-1">
-                <div className="font-semibold text-zinc-200">Req 3.4.2: Settlement System Integrity</div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-zinc-200">Req 3.4.2: Settlement System Integrity</span>
+                  <span
+                    className={`text-[10px] font-semibold px-1 py-0.5 rounded-[2px] ${
+                      shimApplied || verdict === "PASS"
+                        ? "text-emerald-400 bg-emerald-500/10"
+                        : "text-rose-400 bg-rose-500/10"
+                    }`}
+                  >
+                    {shimApplied || verdict === "PASS" ? "COMPLIANT" : "SEV-1 ALERT"}
+                  </span>
+                </div>
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Silent ledger corruption causing settlement batch cron abortion is classified as a Critical Non-Compliance Event (SEV-1).
+                  {shimApplied || verdict === "PASS"
+                    ? "Settlement worker and checkout services execute without runtime TypeError exceptions. Financial ledger integrity certified."
+                    : "Silent ledger corruption causing settlement batch cron abortion is classified as a Critical Non-Compliance Event (SEV-1)."}
                 </p>
               </div>
 
               <div className="p-3 rounded-[4px] bg-[#121318] border border-white/[0.08] space-y-1">
-                <div className="font-semibold text-zinc-200">Req 8.2.8: 90-Day Transition Window</div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-zinc-200">Req 8.2.8: 90-Day Transition Window</span>
+                  <span
+                    className={`text-[10px] font-semibold px-1 py-0.5 rounded-[2px] ${
+                      shimApplied || verdict === "PASS"
+                        ? "text-emerald-400 bg-emerald-500/10"
+                        : "text-amber-400 bg-amber-500/10"
+                    }`}
+                  >
+                    {shimApplied || verdict === "PASS" ? "ACTIVE SHIM" : "VIOLATION"}
+                  </span>
+                </div>
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Deprecation grace periods are strictly required before contract fields can be dropped.
+                  {shimApplied || verdict === "PASS"
+                    ? "Compatibility proxy provides transparent dual-read transition support across the mandatory deprecation window."
+                    : "Deprecation grace periods are strictly required before contract fields can be dropped."}
                 </p>
               </div>
             </div>
@@ -553,7 +646,7 @@ export function DetailPanel({
                 className="w-full py-2 px-3 rounded-[4px] border border-white/[0.12] bg-[#121318] hover:bg-[#181920] hover:border-white/20 text-xs font-medium text-zinc-300 hover:text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <DownloadSimple size={14} className="text-zinc-400" />
-                <span>Export Security Audit</span>
+                <span>Export Security Audit (OASIS SARIF v2.1.0)</span>
               </button>
             </div>
           </div>
