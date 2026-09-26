@@ -823,6 +823,8 @@ export default function VectisCockpitPage() {
           onApplyShim={handleApplyShim}
           shimLoading={shimLoading}
           shimCode={shimCode}
+          onDownloadPassport={handleDownloadPassport}
+          passportAvailable={shimApplied && Boolean(releasePassport)}
         />
       </div>
     </div>

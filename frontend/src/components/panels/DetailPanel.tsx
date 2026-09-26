@@ -13,6 +13,7 @@ import {
   TreeStructure,
   GitMerge,
   TerminalWindow,
+  DownloadSimple,
 } from "@phosphor-icons/react";
 
 interface DetailPanelProps {
@@ -24,6 +25,8 @@ interface DetailPanelProps {
   onApplyShim: () => void;
   shimLoading: boolean;
   shimCode: string;
+  onDownloadPassport?: () => void;
+  passportAvailable?: boolean;
 }
 
 export function DetailPanel({
@@ -35,6 +38,8 @@ export function DetailPanel({
   onApplyShim,
   shimLoading,
   shimCode,
+  onDownloadPassport,
+  passportAvailable,
 }: DetailPanelProps) {
   const [activeTab, setActiveTab] = useState<"breaking" | "impact" | "shim" | "compliance">("breaking");
   const [copied, setCopied] = useState(false);
@@ -352,6 +357,16 @@ export function DetailPanel({
                 </>
               )}
             </button>
+
+            {shimApplied && onDownloadPassport && (
+              <button
+                onClick={onDownloadPassport}
+                className="w-full py-2 px-3 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <DownloadSimple size={14} weight="bold" />
+                <span>Download Cryptographic Release Passport</span>
+              </button>
+            )}
           </div>
         )}
 

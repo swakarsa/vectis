@@ -59,46 +59,46 @@ export function CockpitHeader({
   }
 
   return (
-    <header className="h-14 shrink-0 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-5 flex items-center justify-between z-20 select-none">
+    <header className="h-12 shrink-0 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-4 flex items-center justify-between z-20 select-none">
       {/* Left: Branding & Mode Switcher */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <Link
           href="/"
-          className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
           title="Back to Landing Page"
         >
-          <ArrowLeft size={13} />
+          <ArrowLeft size={12} />
           <span>Home</span>
         </Link>
 
-        <div className="h-3.5 w-[1px] bg-white/[0.1]" />
+        <div className="h-3 w-[1px] bg-white/[0.1]" />
 
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-1.5 group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-white.png"
             alt="Vectis Logo"
-            width={22}
-            height={22}
-            className="w-5.5 h-5.5 object-contain"
+            width={20}
+            height={20}
+            className="w-5 h-5 object-contain"
           />
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-semibold tracking-tight text-white">
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-semibold tracking-tight text-white">
               Vectis
             </span>
-            <span className="text-[11px] text-zinc-500 font-normal">
+            <span className="text-[10px] text-zinc-500 font-normal">
               Release Gate
             </span>
           </div>
         </Link>
 
-        <div className="h-3.5 w-[1px] bg-white/[0.1]" />
+        <div className="h-3 w-[1px] bg-white/[0.1]" />
 
         {/* Mode Segment Switch */}
-        <div className="flex items-center bg-[#131418] border border-white/[0.08] rounded-[4px] p-0.5 text-xs">
+        <div className="flex items-center bg-[#131418] border border-white/[0.08] rounded-[3px] p-0.5 text-[11px]">
           <button
             onClick={() => onModeChange?.("benchmark")}
-            className={`px-3 py-1 rounded-[3px] font-medium transition-all cursor-pointer ${
+            className={`px-2.5 py-0.5 rounded-[2px] font-medium transition-all cursor-pointer ${
               mode === "benchmark"
                 ? "bg-zinc-800 text-white shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
@@ -109,7 +109,7 @@ export function CockpitHeader({
           </button>
           <button
             onClick={() => onModeChange?.("live_github")}
-            className={`px-3 py-1 rounded-[3px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-0.5 rounded-[2px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
               mode === "live_github"
                 ? "bg-zinc-800 text-emerald-300 shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
@@ -128,50 +128,51 @@ export function CockpitHeader({
         <span className={`font-semibold tracking-tight ${statusTextColor}`}>
           {statusLabel}
         </span>
+        {passportAvailable && (
+          <button
+            onClick={onDownloadPassport}
+            className="ml-1 text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer"
+            title="Download Cryptographic Release Passport"
+          >
+            <DownloadSimple size={12} weight="bold" />
+            <span className="underline underline-offset-2">Passport</span>
+          </button>
+        )}
       </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-2.5">
+      {/* Right: Actions - Fixed 2 elements (Never expands or bloats) */}
+      <div className="flex items-center gap-2">
         <GitHubAuthButton />
 
-        {mode === "benchmark" && shimApplied && onResetToBreaking && (
+        {/* Dynamic Single-Slot Primary Action */}
+        {mode === "benchmark" && shimApplied && onResetToBreaking ? (
           <button
             onClick={onResetToBreaking}
-            className="h-8 px-2.5 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-medium text-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="h-8 px-3 rounded-[3px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer"
             title="Re-inject breaking contract mutations to test the blocker again (Jury Simulation Sandbox only)"
           >
             <ShieldWarning size={13} className="text-rose-400" />
             <span>Re-inject Drift</span>
           </button>
-        )}
-
-        {passportAvailable && (
+        ) : (
           <button
-            onClick={onDownloadPassport}
-            className="h-8 px-3 rounded-[4px] border border-white/[0.1] bg-[#14151a] hover:bg-[#1c1d24] text-xs font-medium text-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+            onClick={onAnalyze}
+            disabled={loading}
+            className="h-8 px-3.5 rounded-[3px] bg-white text-black hover:bg-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
-            <DownloadSimple size={13} className="text-emerald-400" />
-            <span>Release Passport</span>
+            {loading ? (
+              <>
+                <ArrowsClockwise size={13} className="animate-spin" />
+                <span>Analyzing AST...</span>
+              </>
+            ) : (
+              <>
+                <TerminalWindow size={13} weight="bold" />
+                <span>Run Gate Audit</span>
+              </>
+            )}
           </button>
         )}
-
-        <button
-          onClick={onAnalyze}
-          disabled={loading}
-          className="h-8 px-3.5 rounded-[4px] bg-white text-black hover:bg-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-        >
-          {loading ? (
-            <>
-              <ArrowsClockwise size={13} className="animate-spin" />
-              <span>Analyzing AST...</span>
-            </>
-          ) : (
-            <>
-              <TerminalWindow size={13} weight="bold" />
-              <span>{shimApplied ? "Re-Audit Healed PR" : "Run Gate Audit"}</span>
-            </>
-          )}
-        </button>
       </div>
     </header>
   );
