@@ -229,7 +229,7 @@ export default function VectisCockpitPage() {
         return;
       }
 
-      // SCENARIO B1: Live Sentinel monitoring clean main branch (no breaking PR)
+      // SCENARIO B1: Live Gate monitoring clean main branch (no breaking PR)
       if (mode === "live_github" && repoPRs.length === 0) {
         setVerdict("PASS");
         setRiskScore(3.8);
@@ -615,12 +615,12 @@ export default function VectisCockpitPage() {
         onResetToBreaking={handleResetToBreaking}
       />
 
-      {/* Sleek Sub-Header Bar (Vectis Live Sentinel Mode only) */}
+      {/* Sleek Sub-Header Bar (Vectis Live Gate Mode only) */}
       {mode === "live_github" && (
         <div className="h-10 border-b border-white/[0.08] bg-[#0c0d10] px-5 flex items-center justify-between z-10 text-xs shrink-0 select-none whitespace-nowrap">
           <div className="flex items-center gap-3">
             <span className="px-1.5 py-0.5 rounded-[2px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-[10px] font-semibold tracking-wider shrink-0 whitespace-nowrap">
-              VECTIS SENTINEL
+              VECTIS GATE
             </span>
 
             <div className="h-3 w-[1px] bg-white/[0.08]" />

@@ -114,10 +114,10 @@ export function CockpitHeader({
                 ? "bg-zinc-800 text-emerald-300 shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
-            title="Vectis Live Sentinel (Real-time release gate & AST interceptor connected to your repositories)"
+            title="Vectis Live Gate (Real-time release gate & AST contract verification connected to your repositories)"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-            <span>Live Sentinel</span>
+            <span>Live Gate</span>
           </button>
         </div>
       </div>
