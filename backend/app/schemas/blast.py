@@ -1,7 +1,9 @@
+import os
+import hmac
 import hashlib
 import json
 import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from pydantic import BaseModel, Field
 
 class BreakingChange(BaseModel):
@@ -58,7 +60,11 @@ class RemediationRequest(BaseModel):
     language: str = "typescript"
 
 class PassportSigner:
-    """RFC 8785 JCS Canonical JSON + SHA-256 Release Passport."""
+    """RFC 8785 JCS Canonical JSON + HMAC-SHA256 / SHA-256 Release Passport."""
+
+    def __init__(self, secret: Optional[str] = None):
+        self.secret = secret
+
     def create_signed_passport(
         self,
         pr_number: int,
@@ -66,7 +72,8 @@ class PassportSigner:
         author: str,
         risk_score: float,
         verdict: str,
-        shim_applied: bool
+        shim_applied: bool,
+        secret: Optional[str] = None
     ) -> Dict[str, Any]:
         payload = {
             "pr_number": pr_number,
@@ -80,6 +87,79 @@ class PassportSigner:
         }
         # RFC 8785: Canonical JSON (sorted keys, no whitespace)
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-        digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-        payload["passport_hash"] = f"sha256:{digest}"
+        signing_secret = secret if secret is not None else (self.secret or os.getenv("VECTIS_PASSPORT_SECRET"))
+
+        if signing_secret:
+            sig = hmac.new(
+                signing_secret.encode("utf-8"),
+                canonical.encode("utf-8"),
+                hashlib.sha256,
+            ).hexdigest()
+            payload["passport_hash"] = f"hmac-sha256:{sig}"
+        else:
+            digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+            payload["passport_hash"] = f"sha256:{digest}"
+
         return payload
+
+    def verify(
+        self, passport: Dict[str, Any], secret: Optional[str] = None
+    ) -> Tuple[bool, str]:
+        """Verify release passport using verify_signed_passport."""
+        return verify_signed_passport(passport, secret=secret or self.secret)
+
+
+def verify_signed_passport(
+    passport: Dict[str, Any], secret: Optional[str] = None
+) -> Tuple[bool, str]:
+    """
+    Verifies cryptographic authenticity of an RFC 8785 release passport.
+    Supports HMAC-SHA256 (keyed) and SHA-256 (unkeyed) digests.
+
+    Returns:
+        tuple[bool, str]: (is_valid, status_or_reason_message)
+    """
+    if not isinstance(passport, dict):
+        return False, "Invalid passport format: expected JSON dictionary"
+
+    passport_hash = passport.get("passport_hash")
+    if not passport_hash or not isinstance(passport_hash, str):
+        return False, "Missing or invalid 'passport_hash' in release passport"
+
+    # Reconstruct canonical payload by omitting the signature / hash field
+    payload = {k: v for k, v in passport.items() if k != "passport_hash"}
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+    active_secret = secret if secret is not None else os.getenv("VECTIS_PASSPORT_SECRET")
+
+    if passport_hash.startswith("hmac-sha256:"):
+        expected_sig = passport_hash.split("hmac-sha256:", 1)[1]
+        if not active_secret:
+            return (
+                False,
+                "Passport signed with HMAC-SHA256 but VECTIS_PASSPORT_SECRET is not configured or provided",
+            )
+        computed_sig = hmac.new(
+            active_secret.encode("utf-8"),
+            canonical.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        if hmac.compare_digest(computed_sig, expected_sig):
+            return True, "Valid HMAC-SHA256 cryptographic release passport signature"
+        return False, "Cryptographic verification failed: HMAC-SHA256 signature mismatch"
+
+    elif passport_hash.startswith("sha256:"):
+        expected_digest = passport_hash.split("sha256:", 1)[1]
+        computed_digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        if hmac.compare_digest(computed_digest, expected_digest):
+            return True, "Valid canonical SHA-256 release passport digest (unkeyed)"
+        return False, "Cryptographic verification failed: SHA-256 digest mismatch"
+
+    elif len(passport_hash) == 64 and all(c in "0123456789abcdefABCDEF" for c in passport_hash):
+        computed_digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        if hmac.compare_digest(computed_digest.lower(), passport_hash.lower()):
+            return True, "Valid canonical SHA-256 release passport digest"
+        return False, "Cryptographic verification failed: SHA-256 digest mismatch"
+
+    return False, f"Unsupported passport_hash algorithm: {passport_hash}"
+

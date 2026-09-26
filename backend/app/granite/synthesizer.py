@@ -615,11 +615,12 @@ class IBMGraniteSynthesizer:
 
             Requirements:
             1. Export a function `createBackwardCompatibilityProxy(session: {target_symbol}): any`.
-            2. Return `new Proxy(session as any, handler)` with exactly four traps:
+            2. Return `new Proxy(session as any, handler)` with five traps:
                - `get`: intercept each legacy_key and return the value at its modern_path.
                  If modern_path is nested (e.g. "metadata.tier") use optional chaining.
                  Also handle `prop === "toJSON"` by returning a function that spreads
                  the target and adds all legacy keys - required for PCI-DSS Sec.10.2.1.
+               - `set`: intercept each legacy_key and write value to its modern_path, returning true.
                - `ownKeys`: return `[...Reflect.ownKeys(target), ...legacyKeys]`.
                - `getOwnPropertyDescriptor`: for each legacy key return a descriptor
                  with `configurable: true, enumerable: true, writable: false`.
@@ -866,6 +867,17 @@ class IBMGraniteSynthesizer:
             f"{ind}}},"
         )
 
+        # --- set trap ---
+        set_cases_lines = f"\n{ind}  ".join(
+            self._render_set_case(r, ind) for r in remaps
+        )
+        set_trap = (
+            f"{ind}set(target, prop, value, receiver) {{\n"
+            f"{ind}  {set_cases_lines}\n"
+            f"{ind}  return Reflect.set(target, prop, value, receiver);\n"
+            f"{ind}}},"
+        )
+
         # --- ownKeys trap ---
         own_keys_trap = (
             f"{ind}ownKeys(target) {{\n"
@@ -900,8 +912,9 @@ class IBMGraniteSynthesizer:
             f" * Wraps a modern `{target_symbol}` object in a backward-compatibility\n"
             " * ES6 Proxy that transparently bridges legacy property accesses.\n"
             " *\n"
-            " * All four Proxy traps are implemented:\n"
+            " * All five Proxy traps are implemented:\n"
             " *   - `get`                      - intercepts deprecated reads\n"
+            " *   - `set`                      - intercepts deprecated writes\n"
             " *   - `ownKeys`                  - exposes legacy keys for reflection\n"
             " *   - `getOwnPropertyDescriptor` - preserves enumerable metadata\n"
             " *   - `has`                      - reports legacy keys as present\n"
@@ -918,6 +931,7 @@ class IBMGraniteSynthesizer:
             f"): Legacy{target_symbol} {{\n"
             f"  return new Proxy(session as any, {{\n"
             f"{get_trap}\n\n"
+            f"{set_trap}\n\n"
             f"{own_keys_trap}\n\n"
             f"{gpd_trap}\n\n"
             f"{has_trap}\n"
@@ -972,5 +986,19 @@ class IBMGraniteSynthesizer:
             f'if (prop === "{remap.legacy_key}") {{\n'
             f"{indent}  return {{ configurable: true, enumerable: true,"
             f" writable: false, value: {access} }};\n"
+            f"{indent}}}"
+        )
+
+    def _render_set_case(self, remap: FieldRemap, indent: str = "    ") -> str:
+        """Render one ``if`` branch inside the ``set`` trap."""
+        parts = remap.modern_path.split(".")
+        if len(parts) > 1:
+            init_check = f"if (!target.{parts[0]}) target.{parts[0]} = {{}};\n{indent}  "
+        else:
+            init_check = ""
+        return (
+            f'if (prop === "{remap.legacy_key}") {{\n'
+            f"{indent}  {init_check}target.{remap.modern_path} = value;\n"
+            f"{indent}  return true;\n"
             f"{indent}}}"
         )
