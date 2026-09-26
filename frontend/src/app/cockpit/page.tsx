@@ -166,9 +166,6 @@ export default function VectisCockpitPage() {
   const [releasePassport, setReleasePassport] = useState<any>(null);
 
   const [mobileView, setMobileView] = useState<"canvas" | "panel">("canvas");
-  const [gatewayMode, setGatewayMode] = useState<"demo" | "live">("demo");
-  const [customApiUrl, setCustomApiUrl] = useState<string>("");
-  const [showGatewayModal, setShowGatewayModal] = useState<boolean>(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const [currentArch, setCurrentArch] = useState<RepoArchitecture>(REPO_ARCHITECTURES["swakarsa/fintech-monorepo"]);
@@ -211,24 +208,10 @@ export default function VectisCockpitPage() {
     [setNodes, setEdges]
   );
 
-  // Initial load: mount and check backend health
+  // Initial load: mount
   useEffect(() => {
     setMounted(true);
-    async function checkBackend() {
-      try {
-        const target = customApiUrl || API_BASE;
-        const res = await fetch(`${target}/health`, { method: "GET", cache: "no-store" });
-        if (res.ok) {
-          setGatewayMode("live");
-        } else {
-          setGatewayMode("demo");
-        }
-      } catch {
-        setGatewayMode("demo");
-      }
-    }
-    checkBackend();
-  }, [customApiUrl]);
+  }, []);
 
   // Dynamically synchronize canvas DAG with the selected repository
   useEffect(() => {
@@ -884,83 +867,11 @@ export default function VectisCockpitPage() {
         activePR={prNumber}
         shimApplied={shimApplied}
         onResetToBreaking={handleResetToBreaking}
-        gatewayMode={gatewayMode}
-        onConfigureGateway={() => setShowGatewayModal(true)}
+        onApplyShim={handleApplyShim}
+        shimLoading={shimLoading}
         mobileView={mobileView}
         onToggleMobileView={setMobileView}
       />
-
-      {/* Guided Jury Evaluation Strip */}
-      <div className="border-b border-white/[0.08] bg-[#0c0d10] px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs z-10 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <span className="px-1.5 py-0.5 rounded-[3px] bg-white/[0.08] border border-white/10 text-white font-semibold text-[10px] tracking-wider uppercase">
-            Jury Evaluation Flow
-          </span>
-          <div className="flex items-center gap-2 text-zinc-400">
-            <span className={`flex items-center gap-1.5 ${!shimApplied ? "text-amber-400 font-semibold" : "text-emerald-400"}`}>
-              <span>1. Detect Break</span>
-              {!shimApplied ? (
-                <span className="text-[10px] px-1.5 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-[2px] tabular-nums font-sans">
-                  PR #482 BLOCKED (84.0)
-                </span>
-              ) : (
-                <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-[2px]">
-                  Analyzed
-                </span>
-              )}
-            </span>
-            <span className="text-zinc-600">→</span>
-            <span className={`flex items-center gap-1.5 ${shimLoading ? "text-blue-400 font-semibold animate-pulse" : shimApplied ? "text-emerald-400 font-semibold" : "text-zinc-400"}`}>
-              <span>2. Granite Auto-Heal</span>
-              {shimApplied && (
-                <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-[2px]">
-                  ES6 Shim Active
-                </span>
-              )}
-            </span>
-            <span className="text-zinc-600">→</span>
-            <span className={`flex items-center gap-1.5 ${shimApplied ? "text-emerald-400 font-semibold" : "text-zinc-500"}`}>
-              <span>3. Release Passport</span>
-              {shimApplied && Boolean(releasePassport) ? (
-                <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-[2px]">
-                  Ed25519 Signed
-                </span>
-              ) : (
-                <span className="text-[10px] text-zinc-500">
-                  (Awaiting Shim)
-                </span>
-              )}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {!shimApplied ? (
-            <button
-              onClick={handleApplyShim}
-              disabled={shimLoading}
-              className="px-2.5 py-1 bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-semibold rounded-[3px] transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
-            >
-              {shimLoading ? "Synthesizing Shim with Granite..." : "⚡ Step 2: Auto-Heal PR with Granite 3.0"}
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleDownloadPassport}
-                className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-medium rounded-[3px] transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>Download Cryptographic Passport (RFC 8785)</span>
-              </button>
-              <button
-                onClick={handleResetToBreaking}
-                className="px-2 py-1 bg-white/[0.06] hover:bg-white/[0.1] text-zinc-400 hover:text-white text-xs rounded-[3px] transition-colors cursor-pointer"
-              >
-                Reset Demo
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Sleek Sub-Header Bar (Vectis Live Gate Mode only) */}
       {mode === "live_github" && (
@@ -1116,12 +1027,6 @@ export default function VectisCockpitPage() {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Graph Canvas */}
         <div className={`flex-1 h-full relative bg-[#08090a] ${mobileView === "panel" ? "hidden lg:block" : "block"}`}>
-          {/* Discrete, non-intrusive canvas status readout */}
-          <div className="absolute top-3 left-3 z-10 pointer-events-none flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] bg-[#0c0d10]/80 border border-white/[0.08] backdrop-blur-sm text-[11px] text-zinc-400 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>Topology: {mode === "benchmark" ? "Fintech Monorepo DAG" : repoName}</span>
-          </div>
-
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -1176,81 +1081,6 @@ export default function VectisCockpitPage() {
           />
         </div>
       </div>
-
-      {/* Gateway Configuration Modal */}
-      {showGatewayModal && (
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowGatewayModal(false);
-          }}
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-        >
-          <div className="bg-[#0e0f13] border border-white/15 rounded-[6px] w-full max-w-md p-5 shadow-2xl space-y-4 relative">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-semibold text-white tracking-tight">
-                Backend Gateway Configuration
-              </h3>
-              <button
-                onClick={() => setShowGatewayModal(false)}
-                className="text-zinc-400 hover:text-white transition-colors cursor-pointer p-1 rounded-[3px] hover:bg-white/[0.06]"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              VECTIS Sentinel features a Zero-Crash In-Browser Demo Engine that runs deterministically on Vercel without requiring an active backend. To connect to your own live FastAPI backend instance, specify the URL below.
-            </p>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-medium text-zinc-300">
-                Custom API Gateway URL:
-              </label>
-              <input
-                type="text"
-                value={customApiUrl}
-                onChange={(e) => setCustomApiUrl(e.target.value)}
-                placeholder="https://api.yourdomain.com or http://localhost:8000"
-                className="w-full bg-[#14151b] border border-white/10 rounded-[4px] px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-white/[0.08]">
-              <button
-                onClick={() => {
-                  setCustomApiUrl("");
-                  setGatewayMode("demo");
-                  setShowGatewayModal(false);
-                }}
-                className="px-3 py-1.5 bg-white/[0.08] hover:bg-white/[0.14] text-zinc-300 text-xs font-medium rounded-[4px] transition-colors cursor-pointer"
-              >
-                Use In-Browser Demo Engine
-              </button>
-              <button
-                onClick={async () => {
-                  const target = customApiUrl.trim();
-                  if (target) {
-                    try {
-                      const res = await fetch(`${target}/health`, { method: "GET" });
-                      if (res.ok) {
-                        setGatewayMode("live");
-                      } else {
-                        setGatewayMode("demo");
-                      }
-                    } catch {
-                      setGatewayMode("demo");
-                    }
-                  }
-                  setShowGatewayModal(false);
-                }}
-                className="px-3 py-1.5 bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold rounded-[4px] transition-colors cursor-pointer"
-              >
-                Connect & Test
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
