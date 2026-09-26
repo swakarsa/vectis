@@ -174,29 +174,12 @@ class DependencyDAGEngine:
         self.graph.clear()
         self._node_metadata.clear()
 
-        # Hardcoded demo graph (fintech enterprise scenario)
-        nodes = [
-            ("models/user.ts", {"label": "models/user.ts", "criticality": 1.0, "traffic": 0.8, "service": "Identity Core"}),
-            ("auth/session.ts", {"label": "auth/session.ts", "criticality": 0.95, "traffic": 0.9, "service": "Auth Gateway"}),
-            ("payments/checkout.ts", {"label": "payments/checkout.ts", "criticality": 1.0, "traffic": 1.0, "service": "Billing & Checkout"}),
-            ("workers/settlement_worker.ts", {"label": "workers/settlement_worker.ts", "criticality": 0.85, "traffic": 0.6, "service": "Settlement Cron"}),
-            ("reporting/invoice_generator.ts", {"label": "reporting/invoice_generator.ts", "criticality": 0.7, "traffic": 0.3, "service": "Invoicing"}),
-            ("api/routes/user_profile.ts", {"label": "api/routes/user_profile.ts", "criticality": 0.5, "traffic": 0.7, "service": "Public API"}),
-            ("api/routes/admin_dashboard.ts", {"label": "api/routes/admin_dashboard.ts", "criticality": 0.6, "traffic": 0.4, "service": "Internal Ops"}),
-        ]
-        for node_id, meta in nodes:
-            self.graph.add_node(node_id)
-            self._node_metadata[node_id] = meta
-
-        edges = [
-            ("models/user.ts", "auth/session.ts"),
-            ("auth/session.ts", "payments/checkout.ts"),
-            ("auth/session.ts", "workers/settlement_worker.ts"),
-            ("payments/checkout.ts", "reporting/invoice_generator.ts"),
-            ("auth/session.ts", "api/routes/user_profile.ts"),
-            ("models/user.ts", "api/routes/admin_dashboard.ts"),
-        ]
-        self.graph.add_edges_from(edges)
+        from .dag_crawler import DynamicWorkspaceCrawler
+        crawler = DynamicWorkspaceCrawler(workspace_root=repo_path)
+        crawled = crawler.crawl_workspace(repo_path) if repo_path and os.path.exists(repo_path) else nx.DiGraph()
+        self.graph = crawler.merge_with_fallback(crawled)
+        for node_id in self.graph.nodes():
+            self._node_metadata[node_id] = dict(self.graph.nodes[node_id])
 
     def calculate_downstream_impact(
         self, file_path: str, symbol_name: str

@@ -27,6 +27,7 @@ interface DetailPanelProps {
   shimCode: string;
   onDownloadPassport?: () => void;
   passportAvailable?: boolean;
+  onExportSecurityAudit?: () => void;
 }
 
 export function DetailPanel({
@@ -40,6 +41,7 @@ export function DetailPanel({
   shimCode,
   onDownloadPassport,
   passportAvailable,
+  onExportSecurityAudit,
 }: DetailPanelProps) {
   const [activeTab, setActiveTab] = useState<"breaking" | "impact" | "shim" | "compliance">("breaking");
   const [copied, setCopied] = useState(false);
@@ -48,6 +50,110 @@ export function DetailPanel({
     navigator.clipboard.writeText(shimCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportAudit = () => {
+    if (onExportSecurityAudit) {
+      onExportSecurityAudit();
+      return;
+    }
+    const sarifPayload = {
+      $schema: "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+      version: "2.1.0",
+      runs: [
+        {
+          tool: {
+            driver: {
+              name: "VECTIS Sentinel",
+              version: "1.0.0",
+              semanticVersion: "1.0.0",
+              informationUri: "https://github.com/swakarsa/vectis",
+              rules: [
+                {
+                  id: "PCI-4.0.1-REQ-10.2.1",
+                  name: "PCI-REQ-10.2.1-Audit-Log-Identity-Continuity",
+                  shortDescription: {
+                    text: "PCI-DSS v4.0.1 Req 10.2.1: Audit Log Identity / Principal Mutation Without Shim",
+                  },
+                  defaultConfiguration: { level: "error" },
+                  properties: {
+                    "security-severity": "7.0",
+                    tags: ["security", "compliance", "pci-dss"],
+                  },
+                },
+                {
+                  id: "PCI-4.0.1-REQ-3.4.2",
+                  name: "PCI-REQ-3.4.2-PAN-Exposure",
+                  shortDescription: {
+                    text: "PCI-DSS v4.0.1 Req 3.4.2: PAN / CVV / Card Expiry Exposed in Schema",
+                  },
+                  defaultConfiguration: { level: "error" },
+                  properties: {
+                    "security-severity": "9.0",
+                    tags: ["security", "compliance", "pci-dss"],
+                  },
+                },
+                {
+                  id: "PCI-4.0.1-REQ-8.2.8",
+                  name: "PCI-REQ-8.2.8-Auth-Credential-Exposure",
+                  shortDescription: {
+                    text: "PCI-DSS v4.0.1 Req 8.2.8: Raw Authentication Credential in Interface Contract",
+                  },
+                  defaultConfiguration: { level: "error" },
+                  properties: {
+                    "security-severity": "9.0",
+                    tags: ["security", "compliance", "pci-dss"],
+                  },
+                },
+              ],
+            },
+          },
+          results: breakingChanges.map((change) => ({
+            ruleId: "PCI-4.0.1-REQ-10.2.1",
+            level: "error",
+            message: {
+              text: `[HIGH] ${change.symbol_name || "Contract symbol"}: Identity / principal field removal without backward-compatible serialization shim.`,
+            },
+            locations: [
+              {
+                physicalLocation: {
+                  artifactLocation: {
+                    uri: change.file_path || "src/auth/session.ts",
+                    uriBaseId: "%SRCROOT%",
+                  },
+                  region: {
+                    startLine: change.line_number || 12,
+                    startColumn: 1,
+                    snippet: {
+                      text: `${change.old_signature || ""} -> ${change.new_signature || ""}`,
+                    },
+                  },
+                },
+              },
+            ],
+            fixes: [
+              {
+                description: {
+                  text: "Apply IBM Granite 3.0 auto-heal compatibility shim.",
+                },
+              },
+            ],
+          })),
+        },
+      ],
+    };
+
+    const blob = new Blob([JSON.stringify(sarifPayload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "vectis-security-audit.sarif";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const isIdle = verdict === "IDLE";
@@ -361,10 +467,16 @@ export function DetailPanel({
             {shimApplied && onDownloadPassport && (
               <button
                 onClick={onDownloadPassport}
-                className="w-full py-2 px-3 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                className="w-full py-2 px-3 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 flex items-center justify-between gap-2 transition-colors cursor-pointer"
               >
-                <DownloadSimple size={14} weight="bold" />
-                <span>Download Cryptographic Release Passport</span>
+                <div className="flex items-center gap-2 truncate">
+                  <DownloadSimple size={14} weight="bold" className="shrink-0" />
+                  <span className="truncate">Download Cryptographic Release Passport</span>
+                </div>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-200 text-[10px] font-medium shrink-0">
+                  <ShieldCheck size={11} weight="fill" className="text-emerald-400" />
+                  <span>Certified &amp; Signed</span>
+                </span>
               </button>
             )}
           </div>
@@ -409,6 +521,17 @@ export function DetailPanel({
                   Deprecation grace periods are strictly required before contract fields can be dropped.
                 </p>
               </div>
+            </div>
+
+            {/* Secondary Action: Export Security Audit */}
+            <div className="pt-1">
+              <button
+                onClick={handleExportAudit}
+                className="w-full py-2 px-3 rounded-[4px] border border-white/[0.12] bg-[#121318] hover:bg-[#181920] hover:border-white/20 text-xs font-medium text-zinc-300 hover:text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <DownloadSimple size={14} className="text-zinc-400" />
+                <span>Export Security Audit</span>
+              </button>
             </div>
           </div>
         )}

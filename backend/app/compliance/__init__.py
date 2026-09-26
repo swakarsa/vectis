@@ -9,6 +9,7 @@ from .pci_dss_engine import (
     RULE_PCI_6_2_4,
     RULE_SOC2_CC6_1,
 )
+from .sarif_exporter import SARIFExporter
 
 __all__ = [
     "PCIDSSComplianceEngine",
@@ -19,4 +20,5 @@ __all__ = [
     "RULE_PCI_10_2_1",
     "RULE_PCI_6_2_4",
     "RULE_SOC2_CC6_1",
+    "SARIFExporter",
 ]
