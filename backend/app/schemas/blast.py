@@ -126,8 +126,9 @@ def verify_signed_passport(
     if not passport_hash or not isinstance(passport_hash, str):
         return False, "Missing or invalid 'passport_hash' in release passport"
 
-    # Reconstruct canonical payload by omitting the signature / hash field
-    payload = {k: v for k, v in passport.items() if k != "passport_hash"}
+    # Reconstruct canonical payload by omitting the signature / hash field and transport envelope metadata
+    ignored_keys = {"passport_hash", "signature_algorithm", "canonical_standard", "attestation", "signature"}
+    payload = {k: v for k, v in passport.items() if k not in ignored_keys}
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
     active_secret = secret if secret is not None else os.getenv("VECTIS_PASSPORT_SECRET")

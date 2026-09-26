@@ -79,7 +79,7 @@ export const RepoSelector: React.FC<RepoSelectorProps> = ({
                     <div>
                       <div className="flex items-center gap-1.5 text-xs font-medium">
                         {r.isBenchmark ? (
-                          <ShieldCheck size={13} className="text-blue-400" />
+                          <ShieldCheck size={13} className="text-emerald-400" />
                         ) : (
                           <GitBranch size={13} className="text-zinc-400" />
                         )}
@@ -102,11 +102,11 @@ export const RepoSelector: React.FC<RepoSelectorProps> = ({
                   placeholder="owner/repo (e.g. org/payments)"
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  className="flex-1 bg-[#16171b] border border-white/10 rounded-[4px] px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500/50"
+                  className="flex-1 bg-[#16171b] border border-white/10 rounded-[4px] px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/20"
                 />
                 <button
                   type="submit"
-                  className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-[4px] font-medium transition-colors"
+                  className="px-2.5 py-1 bg-white/[0.12] hover:bg-white/[0.18] text-white text-xs rounded-[4px] font-medium border border-white/10 transition-colors cursor-pointer"
                 >
                   Load
                 </button>

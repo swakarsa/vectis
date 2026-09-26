@@ -148,7 +148,7 @@ export function HeroSection() {
 
                   <div className="text-zinc-400 flex items-start gap-2">
                     <span className="text-emerald-400 font-medium">[ok]</span>
-                    <span>AST Traversal complete in 1.2ms (Tree-sitter binary parser)</span>
+                    <span>AST Traversal complete in 1.2ms (Deterministic AST Grammar Engine)</span>
                   </div>
 
                   <div className="text-rose-400 flex items-start gap-2">

@@ -63,7 +63,7 @@ export function LandingFooter() {
           {/* Right: Spacious Minimalist Navigation Links */}
           <div className="flex items-center gap-6 text-zinc-400">
             <a
-              href="https://github.com"
+              href="https://github.com/swakarsa/vectis"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-zinc-200 transition-colors"

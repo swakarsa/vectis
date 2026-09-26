@@ -2,6 +2,9 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "vectis-gate": "./bin/vectis.js"
+  },
   "scripts": {
     "dev": "node node_modules/next/dist/bin/next dev --webpack",
     "build": "node node_modules/next/dist/bin/next build --webpack",
