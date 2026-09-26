@@ -8,7 +8,7 @@ import { ArrowRight, TerminalWindow, GitPullRequest } from "@phosphor-icons/reac
 export function LandingNavbar() {
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-[#08090a]/90 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between">
+      <div className="relative max-w-7xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between">
         {/* Left: Branding */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group">
@@ -38,8 +38,8 @@ export function LandingNavbar() {
           </div>
         </div>
 
-        {/* Center: Quick Links */}
-        <div className="hidden lg:flex items-center gap-6 text-xs text-zinc-400">
+        {/* Center: Quick Links (Centering perfectly with viewport & hero section) */}
+        <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center gap-8 text-xs font-medium text-zinc-400">
           <a href="#problem" className="hover:text-zinc-200 transition-colors">
             Problem
           </a>
