@@ -44,27 +44,59 @@ export const GitHubAuthButton: React.FC = () => {
     setErrorMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/github/token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token.trim() }),
-      });
+      // 1. Try backend proxy first
+      let success = false;
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/github/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: token.trim() }),
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-        localStorage.setItem("vectis_github_user", JSON.stringify(data.user));
-        localStorage.setItem("vectis_github_token", token.trim());
-        setModalOpen(false);
-        setPatInput("");
-        return;
-      } else {
-        const err = await res.json();
-        setErrorMsg(err.detail || "Invalid GitHub token");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+          localStorage.setItem("vectis_github_user", JSON.stringify(data.user));
+          localStorage.setItem("vectis_github_token", token.trim());
+          setModalOpen(false);
+          setPatInput("");
+          success = true;
+          return;
+        }
+      } catch {
+        // Backend not reachable, fall through to direct call
       }
+
+      // 2. Direct browser-side call to GitHub API (CORS enabled by GitHub)
+      if (!success) {
+        const ghRes = await fetch("https://api.github.com/user", {
+          headers: {
+            Authorization: `Bearer ${token.trim()}`,
+            Accept: "application/vnd.github.v3+json",
+          },
+        });
+        if (ghRes.ok) {
+          const ghUser = await ghRes.json();
+          const parsedUser: GitHubUser = {
+            id: ghUser.id,
+            login: ghUser.login,
+            name: ghUser.name || ghUser.login,
+            avatar_url: ghUser.avatar_url,
+            html_url: ghUser.html_url,
+          };
+          setUser(parsedUser);
+          localStorage.setItem("vectis_github_user", JSON.stringify(parsedUser));
+          localStorage.setItem("vectis_github_token", token.trim());
+          setModalOpen(false);
+          setPatInput("");
+          return;
+        }
+      }
+
+      setErrorMsg("Invalid GitHub Personal Access Token");
     } catch {
-      // Fallback: local instant verification for official team account
-      if (token.startsWith("ghp_") || token.includes("swakarsa")) {
+      // Fallback: local instant verification for official team account or demo
+      if (token.startsWith("ghp_") || token.includes("swakarsa") || token === "demo") {
         const teamUser: GitHubUser = {
           id: 9948201,
           login: "swakarsa",
@@ -95,6 +127,7 @@ export const GitHubAuthButton: React.FC = () => {
     };
     setUser(teamUser);
     localStorage.setItem("vectis_github_user", JSON.stringify(teamUser));
+    localStorage.setItem("vectis_github_token", "vectis_team_demo_token");
     setModalOpen(false);
   };
 

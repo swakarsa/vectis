@@ -22,6 +22,7 @@ export const BlastNode = React.memo(function BlastNode({ data, selected }: NodeP
   let dotColor = "bg-zinc-600";
   let statusText = "Stable";
   let statusTextColor = "text-zinc-500";
+  let handleColor = "!bg-zinc-500";
   let icon = <FileCode size={14} className="text-zinc-400" />;
 
   if (state === "source") {
@@ -29,34 +30,37 @@ export const BlastNode = React.memo(function BlastNode({ data, selected }: NodeP
     dotColor = "bg-rose-500 animate-pulse";
     statusText = "Breaking Source";
     statusTextColor = "text-rose-400 font-medium";
+    handleColor = "!bg-rose-500";
     icon = <ShieldWarning size={14} weight="bold" className="text-rose-400" />;
   } else if (state === "impacted") {
     borderStyle = "border-amber-500/50 bg-[#151210] shadow-[0_0_12px_rgba(245,158,11,0.12)]";
     dotColor = "bg-amber-400";
     statusText = "Downstream Hazard";
     statusTextColor = "text-amber-400 font-medium";
+    handleColor = "!bg-amber-400";
     icon = <WarningCircle size={14} weight="bold" className="text-amber-400" />;
   } else if (state === "healed") {
     borderStyle = "border-emerald-500/50 bg-[#0e1613] shadow-[0_0_12px_rgba(16,185,129,0.12)]";
     dotColor = "bg-emerald-400";
     statusText = "Compatibility Shim Active";
     statusTextColor = "text-emerald-400 font-medium";
+    handleColor = "!bg-emerald-400";
     icon = <ShieldCheck size={14} weight="bold" className="text-emerald-400" />;
   }
 
   return (
     <div
       className={`rounded-[6px] border ${borderStyle} ${
-        selected ? "ring-1 ring-white/20" : ""
+        selected ? "ring-2 ring-white/60 shadow-[0_0_12px_rgba(255,255,255,0.15)]" : ""
       } p-3 min-w-[210px] text-left transition-colors duration-150 select-none`}
     >
       <Handle
         type="target"
         position={Position.Top}
-        className="!bg-zinc-500 !border-0 !w-1.5 !h-1.5 !rounded-none"
+        className={`${handleColor} !border-0 !w-1.5 !h-1.5 !rounded-none`}
       />
 
-      {/* Top Header: Icon & File Label */}
+      {/* Top Header: Icon & File Label + Semantic Badge */}
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-1.5 truncate">
           {icon}
@@ -64,6 +68,21 @@ export const BlastNode = React.memo(function BlastNode({ data, selected }: NodeP
             {nodeData.label}
           </span>
         </div>
+        {state === "source" && (
+          <span className="text-[9px] font-sans font-bold px-1.5 py-0.5 rounded-[2px] bg-rose-500/20 text-rose-300 border border-rose-500/40 uppercase tracking-wider shrink-0">
+            Source
+          </span>
+        )}
+        {state === "impacted" && (
+          <span className="text-[9px] font-sans font-bold px-1.5 py-0.5 rounded-[2px] bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider shrink-0">
+            Hazard
+          </span>
+        )}
+        {state === "healed" && (
+          <span className="text-[9px] font-sans font-bold px-1.5 py-0.5 rounded-[2px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider shrink-0">
+            Healed
+          </span>
+        )}
       </div>
 
       {/* Service Subtitle */}
@@ -73,7 +92,7 @@ export const BlastNode = React.memo(function BlastNode({ data, selected }: NodeP
         </div>
       )}
 
-      {/* Status indicator row (Dot + Text, no badge, no pill) */}
+      {/* Status indicator row (Dot + Text) */}
       <div className="flex items-center justify-between pt-1.5 border-t border-white/[0.04] text-[11px]">
         <div className="flex items-center gap-1.5">
           <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
@@ -81,7 +100,7 @@ export const BlastNode = React.memo(function BlastNode({ data, selected }: NodeP
         </div>
 
         {nodeData.criticality !== undefined && (
-          <span className="text-zinc-500 text-[11px]">
+          <span className="text-zinc-500 text-[11px] tabular-nums font-sans">
             Crit: {nodeData.criticality}
           </span>
         )}
@@ -90,7 +109,7 @@ export const BlastNode = React.memo(function BlastNode({ data, selected }: NodeP
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!bg-zinc-500 !border-0 !w-1.5 !h-1.5 !rounded-none"
+        className={`${handleColor} !border-0 !w-1.5 !h-1.5 !rounded-none`}
       />
     </div>
   );
