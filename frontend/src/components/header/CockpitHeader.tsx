@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   ShieldCheck,
   ShieldWarning,
@@ -36,74 +35,66 @@ export function CockpitHeader({
   passportAvailable,
   mode = "benchmark",
   onModeChange,
-  activeRepo = "swakarsa/vectis",
-  activePR = 482,
 }: CockpitHeaderProps) {
   let statusDot = "bg-zinc-500";
   let statusLabel = "Awaiting PR Analysis";
   let statusTextColor = "text-zinc-400";
-  let riskColor = "text-zinc-400";
 
   if (verdict === "BLOCK") {
     statusDot = "bg-rose-500 animate-pulse";
-    statusLabel = "Release Blocked";
+    statusLabel = `Release Blocked (${riskScore.toFixed(0)}/100)`;
     statusTextColor = "text-rose-400";
-    riskColor = "text-rose-400";
   } else if (verdict === "WARN") {
     statusDot = "bg-amber-400";
-    statusLabel = "Review Required";
+    statusLabel = `Review Required (${riskScore.toFixed(0)}/100)`;
     statusTextColor = "text-amber-400";
-    riskColor = "text-amber-400";
   } else if (verdict === "PASS") {
     statusDot = "bg-emerald-400";
-    statusLabel = "Gate Cleared";
+    statusLabel = `Gate Cleared (${riskScore.toFixed(0)}/100)`;
     statusTextColor = "text-emerald-400";
-    riskColor = "text-emerald-400";
   }
 
   return (
-    <header className="h-14 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-5 flex items-center justify-between z-20">
-      {/* Left Branding & Mode Toggle */}
+    <header className="h-14 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-5 flex items-center justify-between z-20 select-none">
+      {/* Left: Branding & Mode Switcher */}
       <div className="flex items-center gap-3">
         <Link
           href="/"
-          className="flex items-center gap-2 text-xs text-zinc-400 hover:text-zinc-200 transition-colors mr-1"
+          className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
           title="Back to Landing Page"
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={13} />
           <span>Home</span>
         </Link>
 
-        <div className="h-4 w-[1px] bg-white/[0.08]" />
+        <div className="h-3.5 w-[1px] bg-white/[0.1]" />
 
-        <Link href="/" className="flex items-center gap-2.5 group">
+        <Link href="/" className="flex items-center gap-2 group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-white.png"
             alt="Vectis Logo"
-            width={26}
-            height={26}
-            className="w-6.5 h-6.5 object-contain transition-transform group-hover:scale-105"
+            width={22}
+            height={22}
+            className="w-5.5 h-5.5 object-contain"
           />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold tracking-tight text-white group-hover:text-zinc-200 transition-colors">
-                Vectis
-              </span>
-              <span className="text-xs text-zinc-500 font-normal">
-                Release Gate
-              </span>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-semibold tracking-tight text-white">
+              Vectis
+            </span>
+            <span className="text-[11px] text-zinc-500 font-normal">
+              Release Gate
+            </span>
           </div>
         </Link>
 
-        <div className="h-4 w-[1px] bg-white/[0.08]" />
+        <div className="h-3.5 w-[1px] bg-white/[0.1]" />
 
-        {/* Mode Selector */}
+        {/* Mode Segment Switch */}
         <div className="flex items-center bg-[#131418] border border-white/[0.08] rounded-[4px] p-0.5 text-xs">
           <button
             onClick={() => onModeChange?.("benchmark")}
-            className={`px-2.5 py-1 rounded-[3px] font-medium transition-all ${
+            className={`px-3 py-1 rounded-[3px] font-medium transition-all cursor-pointer ${
               mode === "benchmark"
                 ? "bg-zinc-800 text-white shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
@@ -113,50 +104,27 @@ export function CockpitHeader({
           </button>
           <button
             onClick={() => onModeChange?.("live_github")}
-            className={`px-2.5 py-1 rounded-[3px] font-medium transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-[3px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
               mode === "live_github"
                 ? "bg-zinc-800 text-emerald-300 shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             Live GitHub Defender
           </button>
         </div>
-
-        {/* Live Defender Status Badge */}
-        <div className="hidden xl:flex items-center gap-2 text-[11px] text-zinc-500 border border-white/[0.06] bg-white/[0.02] px-2.5 py-1 rounded-[4px]">
-          <span className="text-emerald-400 font-mono">CI: ACTIVE</span>
-          <span className="text-zinc-600">·</span>
-          <span>Webhook: 200 OK</span>
-          <span className="text-zinc-600">·</span>
-          <span className="text-zinc-400">Fail-Closed Gate</span>
-        </div>
       </div>
 
-      {/* Middle Telemetry & Verdict (No badges, No pills) */}
-      <div className="flex items-center gap-7">
-        {/* Risk Score */}
-        <div className="flex items-baseline gap-2">
-          <span className="text-xs text-zinc-500 uppercase tracking-wider font-medium">
-            Risk Score
-          </span>
-          <span className={`text-xl font-bold tracking-tight tabular-nums ${riskColor}`}>
-            {riskScore.toFixed(1)}
-          </span>
-          <span className="text-xs text-zinc-600">/ 100</span>
-        </div>
-
-        {/* Status Dot + Text (Vercel/Linear style) */}
-        <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${statusDot}`} />
-          <span className={`text-xs font-semibold uppercase tracking-wider ${statusTextColor}`}>
-            {statusLabel}
-          </span>
-        </div>
+      {/* Center: Clean Gate Status */}
+      <div className="flex items-center gap-2 text-xs">
+        <span className={`w-2 h-2 rounded-full ${statusDot}`} />
+        <span className={`font-semibold tracking-tight ${statusTextColor}`}>
+          {statusLabel}
+        </span>
       </div>
 
-      {/* Right Action Buttons (Crisp rectangular style, no pills) */}
+      {/* Right: Actions */}
       <div className="flex items-center gap-2.5">
         <GitHubAuthButton />
 
@@ -165,7 +133,7 @@ export function CockpitHeader({
             onClick={onDownloadPassport}
             className="h-8 px-3 rounded-[4px] border border-white/[0.1] bg-[#14151a] hover:bg-[#1c1d24] text-xs font-medium text-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            <DownloadSimple size={14} className="text-emerald-400" />
+            <DownloadSimple size={13} className="text-emerald-400" />
             <span>Release Passport</span>
           </button>
         )}
@@ -177,12 +145,12 @@ export function CockpitHeader({
         >
           {loading ? (
             <>
-              <ArrowsClockwise size={14} className="animate-spin" />
+              <ArrowsClockwise size={13} className="animate-spin" />
               <span>Analyzing AST...</span>
             </>
           ) : (
             <>
-              <TerminalWindow size={14} weight="bold" />
+              <TerminalWindow size={13} weight="bold" />
               <span>Run Gate Audit</span>
             </>
           )}

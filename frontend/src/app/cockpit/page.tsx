@@ -405,78 +405,78 @@ export default function VectisCockpitPage() {
         activePR={prNumber}
       />
 
+      {/* Sleek Sub-Header Bar (Live GitHub Mode only) */}
+      {mode === "live_github" && (
+        <div className="h-10 border-b border-white/[0.08] bg-[#0c0d10] px-5 flex items-center justify-between z-10 text-xs shrink-0 select-none">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-zinc-400">
+              <span className="text-zinc-500 font-medium">Repo:</span>
+              <input
+                type="text"
+                value={repoName}
+                onChange={(e) => setRepoName(e.target.value)}
+                className="bg-[#14151a] border border-white/[0.08] rounded-[3px] px-2 py-0.5 text-white font-medium focus:outline-none focus:border-white/20 w-44"
+                placeholder="owner/repo"
+              />
+            </div>
+            <div className="h-3 w-[1px] bg-white/[0.08]" />
+            <div className="flex items-center gap-1.5 text-zinc-400">
+              <span className="text-zinc-500 font-medium">PR:</span>
+              <input
+                type="number"
+                value={prNumber}
+                onChange={(e) => setPrNumber(Number(e.target.value))}
+                className="bg-[#14151a] border border-white/[0.08] rounded-[3px] px-1.5 py-0.5 text-white font-medium focus:outline-none focus:border-white/20 w-16"
+              />
+            </div>
+            <div className="h-3 w-[1px] bg-white/[0.08]" />
+            <div className="flex items-center gap-1.5 text-zinc-400">
+              <span className="text-zinc-500 font-medium">Branch:</span>
+              <input
+                type="text"
+                value={headBranch}
+                onChange={(e) => setHeadBranch(e.target.value)}
+                className="bg-[#14151a] border border-white/[0.08] rounded-[3px] px-2 py-0.5 text-white font-medium focus:outline-none focus:border-white/20 w-48"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-[11px]">
+              <span className="text-zinc-500">Checks API:</span>
+              {checksStatus === "failure" ? (
+                <span className="text-rose-400 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  FAILURE (Merge Blocked)
+                </span>
+              ) : checksStatus === "success" ? (
+                <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  SUCCESS (Merge Unlocked)
+                </span>
+              ) : (
+                <span className="text-zinc-400 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+                  Listening (Webhook 200 OK)
+                </span>
+              )}
+            </div>
+
+            <button
+              onClick={handleAnalyze}
+              disabled={loading}
+              className="px-2.5 py-1 bg-white/[0.08] hover:bg-white/[0.14] text-white text-[11px] font-medium rounded-[3px] border border-white/10 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {loading ? "Auditing..." : "Audit PR Diff"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Workspace: 65% DAG Canvas + 35% Sentry Detail Panel */}
       <div className="flex-1 flex overflow-hidden">
         {/* Graph Canvas */}
         <div className="flex-1 h-full relative bg-[#08090a]">
-          {/* Live GitHub PR Toolbar */}
-          {mode === "live_github" && (
-            <div className="absolute top-4 left-4 right-4 z-10 bg-[#101116]/95 backdrop-blur-md border border-white/[0.1] rounded-[6px] p-3 shadow-2xl flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-xs text-zinc-300">
-                  <span className="text-zinc-500 font-medium">Repo:</span>
-                  <input
-                    type="text"
-                    value={repoName}
-                    onChange={(e) => setRepoName(e.target.value)}
-                    className="bg-[#181a20] border border-white/[0.08] rounded-[4px] px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500/50 w-36 font-sans font-medium"
-                    placeholder="owner/repo"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-zinc-300">
-                  <span className="text-zinc-500 font-medium">PR:</span>
-                  <input
-                    type="number"
-                    value={prNumber}
-                    onChange={(e) => setPrNumber(Number(e.target.value))}
-                    className="bg-[#181a20] border border-white/[0.08] rounded-[4px] px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500/50 w-16 font-sans font-medium"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-zinc-300">
-                  <span className="text-zinc-500 font-medium">Branch:</span>
-                  <input
-                    type="text"
-                    value={headBranch}
-                    onChange={(e) => setHeadBranch(e.target.value)}
-                    className="bg-[#181a20] border border-white/[0.08] rounded-[4px] px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500/50 w-44 font-sans font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* Status & Enforcement Indicator */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-2.5 py-1 rounded-[4px] bg-black/40 border border-white/[0.06] text-xs">
-                  <span className="text-zinc-500">GitHub Checks API:</span>
-                  {checksStatus === "failure" ? (
-                    <span className="text-rose-400 font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                      FAILURE (Merge Blocked)
-                    </span>
-                  ) : checksStatus === "success" ? (
-                    <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      SUCCESS (Merge Unlocked)
-                    </span>
-                  ) : checksStatus === "in_progress" ? (
-                    <span className="text-amber-400 font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-spin" />
-                      Auditing PR Diff...
-                    </span>
-                  ) : (
-                    <span className="text-zinc-400 font-sans font-medium">LISTENING (Webhook 200 OK)</span>
-                  )}
-                </div>
-
-                <button
-                  onClick={handleAnalyze}
-                  disabled={loading}
-                  className="px-3 py-1 bg-white text-black hover:bg-zinc-200 text-xs font-semibold rounded-[4px] transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  {loading ? "Auditing..." : "Audit Live PR Diff"}
-                </button>
-              </div>
-            </div>
-          )}
           <ReactFlow
             nodes={nodes}
             edges={edges}
