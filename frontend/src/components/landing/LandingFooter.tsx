@@ -34,8 +34,9 @@ export function LandingFooter() {
         <div className="pt-8 flex flex-col lg:flex-row items-center justify-between gap-6 text-xs text-zinc-500">
           {/* Left: Founder Copyright */}
           <div className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-white.png"
               alt="Vectis Logo"
               width={22}
               height={22}

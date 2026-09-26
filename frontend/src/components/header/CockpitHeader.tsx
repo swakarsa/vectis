@@ -76,13 +76,13 @@ export function CockpitHeader({
         <div className="h-4 w-[1px] bg-white/[0.08]" />
 
         <Link href="/" className="flex items-center gap-2.5 group">
-          <Image
-            src="/logo.png"
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-white.png"
             alt="Vectis Logo"
             width={26}
             height={26}
             className="w-6.5 h-6.5 object-contain transition-transform group-hover:scale-105"
-            priority
           />
           <div>
             <div className="flex items-center gap-2">

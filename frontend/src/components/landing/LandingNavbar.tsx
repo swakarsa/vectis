@@ -12,13 +12,13 @@ export function LandingNavbar() {
         {/* Left: Branding */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <Image
-              src="/logo.png"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-white.png"
               alt="Vectis Logo"
               width={26}
               height={26}
               className="w-6.5 h-6.5 object-contain transition-transform group-hover:scale-105"
-              priority
             />
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold tracking-tight text-white group-hover:text-zinc-200 transition-colors">
