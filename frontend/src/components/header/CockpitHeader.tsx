@@ -59,30 +59,30 @@ export function CockpitHeader({
   }
 
   return (
-    <header className="h-12 shrink-0 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-4 flex items-center justify-between z-20 select-none">
+    <header className="h-11 shrink-0 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-4 flex items-center justify-between z-20 select-none whitespace-nowrap">
       {/* Left: Branding & Mode Switcher */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2.5 shrink-0 whitespace-nowrap">
         <Link
           href="/"
-          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors shrink-0 whitespace-nowrap"
           title="Back to Landing Page"
         >
           <ArrowLeft size={12} />
           <span>Home</span>
         </Link>
 
-        <div className="h-3 w-[1px] bg-white/[0.1]" />
+        <div className="h-3 w-[1px] bg-white/[0.1] shrink-0" />
 
-        <Link href="/" className="flex items-center gap-1.5 group">
+        <Link href="/" className="flex items-center gap-1.5 group shrink-0 whitespace-nowrap">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-white.png"
             alt="Vectis Logo"
-            width={20}
-            height={20}
-            className="w-5 h-5 object-contain"
+            width={18}
+            height={18}
+            className="w-4.5 h-4.5 object-contain shrink-0"
           />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0 whitespace-nowrap">
             <span className="text-xs font-semibold tracking-tight text-white">
               Vectis
             </span>
@@ -92,46 +92,46 @@ export function CockpitHeader({
           </div>
         </Link>
 
-        <div className="h-3 w-[1px] bg-white/[0.1]" />
+        <div className="h-3 w-[1px] bg-white/[0.1] shrink-0" />
 
         {/* Mode Segment Switch */}
-        <div className="flex items-center bg-[#131418] border border-white/[0.08] rounded-[3px] p-0.5 text-[11px]">
+        <div className="flex items-center bg-[#131418] border border-white/[0.08] rounded-[3px] p-0.5 text-[11px] shrink-0 whitespace-nowrap">
           <button
             onClick={() => onModeChange?.("benchmark")}
-            className={`px-2.5 py-0.5 rounded-[2px] font-medium transition-all cursor-pointer ${
+            className={`px-2 py-0.5 rounded-[2px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               mode === "benchmark"
                 ? "bg-zinc-800 text-white shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
-            title="Interactive Jury Simulation Sandbox (Pre-configured PR #482 OIDC contract drift)"
+            title="Jury Simulation Sandbox (Pre-configured PR #482 OIDC contract drift)"
           >
-            Jury Simulation Sandbox
+            Jury Sandbox
           </button>
           <button
             onClick={() => onModeChange?.("live_github")}
-            className={`px-2.5 py-0.5 rounded-[2px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2 py-0.5 rounded-[2px] font-medium transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
               mode === "live_github"
                 ? "bg-zinc-800 text-emerald-300 shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
             title="Swakarsa Live Defender (Direct real-time GitHub Bot connected to your repositories)"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            Swakarsa Live Defender
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+            <span>Live Defender</span>
           </button>
         </div>
       </div>
 
       {/* Center: Clean Gate Status */}
-      <div className="flex items-center gap-2 text-xs">
-        <span className={`w-2 h-2 rounded-full ${statusDot}`} />
-        <span className={`font-semibold tracking-tight ${statusTextColor}`}>
+      <div className="flex items-center gap-1.5 text-xs shrink-0 whitespace-nowrap">
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot}`} />
+        <span className={`font-semibold tracking-tight whitespace-nowrap ${statusTextColor}`}>
           {statusLabel}
         </span>
         {passportAvailable && (
           <button
             onClick={onDownloadPassport}
-            className="ml-1 text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer"
+            className="ml-1 text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0"
             title="Download Cryptographic Release Passport"
           >
             <DownloadSimple size={12} weight="bold" />
@@ -141,33 +141,33 @@ export function CockpitHeader({
       </div>
 
       {/* Right: Actions - Fixed 2 elements (Never expands or bloats) */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
         <GitHubAuthButton />
 
         {/* Dynamic Single-Slot Primary Action */}
         {mode === "benchmark" && shimApplied && onResetToBreaking ? (
           <button
             onClick={onResetToBreaking}
-            className="h-8 px-3 rounded-[3px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer"
-            title="Re-inject breaking contract mutations to test the blocker again (Jury Simulation Sandbox only)"
+            className="h-7 px-2.5 rounded-[3px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+            title="Re-inject breaking contract mutations to test the blocker again (Jury Simulation Sandbox)"
           >
-            <ShieldWarning size={13} className="text-rose-400" />
+            <ShieldWarning size={13} className="text-rose-400 shrink-0" />
             <span>Re-inject Drift</span>
           </button>
         ) : (
           <button
             onClick={onAnalyze}
             disabled={loading}
-            className="h-8 px-3.5 rounded-[3px] bg-white text-black hover:bg-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            className="h-7 px-3 rounded-[3px] bg-white text-black hover:bg-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
           >
             {loading ? (
               <>
-                <ArrowsClockwise size={13} className="animate-spin" />
+                <ArrowsClockwise size={12} className="animate-spin shrink-0" />
                 <span>Analyzing AST...</span>
               </>
             ) : (
               <>
-                <TerminalWindow size={13} weight="bold" />
+                <TerminalWindow size={12} weight="bold" shrink-0 />
                 <span>Run Gate Audit</span>
               </>
             )}

@@ -106,29 +106,29 @@ export const GitHubAuthButton: React.FC = () => {
   return (
     <>
       {user ? (
-        <div className="flex items-center gap-2 px-2.5 py-1 bg-[#101114] border border-white/10 rounded-[4px] text-xs">
-          <div className="w-5 h-5 rounded-[2px] bg-zinc-800 border border-white/10 overflow-hidden flex items-center justify-center">
-            <GithubLogo size={14} className="text-white" />
+        <div className="flex items-center gap-2 px-2 py-0.5 bg-[#101114] border border-white/10 rounded-[3px] text-xs h-7 whitespace-nowrap shrink-0 select-none">
+          <div className="w-4.5 h-4.5 rounded-[2px] bg-zinc-800 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+            <GithubLogo size={13} className="text-white" />
           </div>
-          <span className="text-zinc-200 font-medium">{user.login}</span>
-          <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
-            <CheckCircle size={11} weight="fill" />
+          <span className="text-zinc-200 font-medium text-xs shrink-0">{user.login}</span>
+          <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono shrink-0">
+            <CheckCircle size={10} weight="fill" />
             Defender Active
           </span>
           <button
             onClick={handleSignOut}
             title="Disconnect GitHub"
-            className="ml-1 text-zinc-500 hover:text-rose-400 transition-colors p-0.5 cursor-pointer"
+            className="ml-0.5 text-zinc-500 hover:text-rose-400 transition-colors p-0.5 cursor-pointer shrink-0"
           >
-            <SignOut size={13} />
+            <SignOut size={12} />
           </button>
         </div>
       ) : (
         <button
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#101114] hover:bg-[#16171b] border border-white/10 hover:border-white/20 text-xs font-medium text-white rounded-[4px] transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-2.5 py-1 bg-[#101114] hover:bg-[#16171b] border border-white/10 hover:border-white/20 text-xs font-medium text-white rounded-[3px] transition-colors cursor-pointer h-7 whitespace-nowrap shrink-0 select-none"
         >
-          <GithubLogo size={14} className="text-white" />
+          <GithubLogo size={13} className="text-white" />
           <span>Connect GitHub</span>
         </button>
       )}
