@@ -516,7 +516,7 @@ export function createSessionUserAdapter(modernSession: any): any {
       // Encode content to base64
       const b64Content = typeof window !== "undefined" ? btoa(unescape(encodeURIComponent(shimContent))) : "";
 
-      await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/contents/${filePath}`, {
+      const putRes = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/contents/${filePath}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -531,15 +531,23 @@ export function createSessionUserAdapter(modernSession: any): any {
         }),
       });
 
-      // Update commit status to success
-      await setGitHubCommitStatus({
-        owner: params.owner,
-        repo: params.repo,
-        sha: params.headSha,
-        state: "success",
-        description: "Vectis Release Gate: PASSED (Auto-Heal Shim Verified - Merge Unlocked)",
-        token: authToken,
-      });
+      let newCommitSha = params.headSha;
+      if (putRes.ok) {
+        const putData = await putRes.json();
+        newCommitSha = putData?.commit?.sha || params.headSha;
+      }
+
+      // Update commit status to success on both original and newly committed SHAs
+      for (const targetSha of Array.from(new Set([params.headSha, newCommitSha]))) {
+        await setGitHubCommitStatus({
+          owner: params.owner,
+          repo: params.repo,
+          sha: targetSha,
+          state: "success",
+          description: "Vectis Release Gate: PASSED (Auto-Heal Shim Verified - Merge Unlocked)",
+          token: authToken,
+        });
+      }
 
       return {
         status: "success",

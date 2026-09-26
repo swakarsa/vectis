@@ -26,6 +26,10 @@ interface CockpitHeaderProps {
   activePR?: number | string;
   shimApplied?: boolean;
   onResetToBreaking?: () => void;
+  gatewayMode?: "demo" | "live";
+  onConfigureGateway?: () => void;
+  mobileView?: "canvas" | "panel";
+  onToggleMobileView?: (view: "canvas" | "panel") => void;
 }
 
 export function CockpitHeader({
@@ -39,6 +43,10 @@ export function CockpitHeader({
   onModeChange,
   shimApplied,
   onResetToBreaking,
+  gatewayMode = "demo",
+  onConfigureGateway,
+  mobileView = "canvas",
+  onToggleMobileView,
 }: CockpitHeaderProps) {
   let statusDot = "bg-zinc-500";
   let statusLabel = "Awaiting PR Analysis";
@@ -59,7 +67,7 @@ export function CockpitHeader({
   }
 
   return (
-    <header className="h-11 shrink-0 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-4 flex items-center justify-between z-20 select-none whitespace-nowrap">
+    <header className="h-11 shrink-0 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between z-20 select-none whitespace-nowrap overflow-x-auto">
       {/* Left: Branding & Mode Switcher */}
       <div className="flex items-center gap-2.5 shrink-0 whitespace-nowrap">
         <Link
@@ -68,7 +76,7 @@ export function CockpitHeader({
           title="Back to Landing Page"
         >
           <ArrowLeft size={12} />
-          <span>Home</span>
+          <span className="hidden sm:inline">Home</span>
         </Link>
 
         <div className="h-3 w-[1px] bg-white/[0.1] shrink-0" />
@@ -86,7 +94,7 @@ export function CockpitHeader({
             <span className="text-xs font-semibold tracking-tight text-white">
               Vectis
             </span>
-            <span className="text-[10px] text-zinc-500 font-normal">
+            <span className="text-[10px] text-zinc-500 font-normal hidden md:inline">
               Release Gate
             </span>
           </div>
@@ -105,7 +113,7 @@ export function CockpitHeader({
             }`}
             title="Simulation Sandbox (Pre-configured PR #482 OIDC contract drift benchmark)"
           >
-            Simulation Sandbox
+            Sandbox
           </button>
           <button
             onClick={() => onModeChange?.("live_github")}
@@ -120,10 +128,36 @@ export function CockpitHeader({
             <span>Live Gate</span>
           </button>
         </div>
+
+        {/* Gateway Status Badge */}
+        <button
+          onClick={onConfigureGateway}
+          className="hidden sm:flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-[3px] bg-white/[0.03] border border-white/[0.08] hover:border-white/20 transition-colors cursor-pointer"
+          title="Gateway Engine Status (Click to inspect or configure custom backend endpoint)"
+        >
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${gatewayMode === 'live' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+          <span className="text-zinc-400">{gatewayMode === 'live' ? 'Live API' : 'Demo Engine'}</span>
+        </button>
+
+        {/* Mobile View Toggle */}
+        <div className="flex lg:hidden items-center bg-[#131418] border border-white/[0.08] rounded-[3px] p-0.5 text-[10px]">
+          <button
+            onClick={() => onToggleMobileView?.("canvas")}
+            className={`px-2 py-0.5 rounded-[2px] font-medium ${mobileView === 'canvas' ? 'bg-zinc-800 text-white' : 'text-zinc-400'}`}
+          >
+            Canvas
+          </button>
+          <button
+            onClick={() => onToggleMobileView?.("panel")}
+            className={`px-2 py-0.5 rounded-[2px] font-medium ${mobileView === 'panel' ? 'bg-zinc-800 text-white' : 'text-zinc-400'}`}
+          >
+            Details
+          </button>
+        </div>
       </div>
 
       {/* Center: Clean Gate Status */}
-      <div className="flex items-center gap-1.5 text-xs shrink-0 whitespace-nowrap">
+      <div className="flex items-center gap-1.5 text-xs shrink-0 whitespace-nowrap px-2">
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot}`} />
         <span className={`font-semibold tracking-tight whitespace-nowrap ${statusTextColor}`}>
           {statusLabel}

@@ -24,7 +24,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://vectis.vercel.app"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://vectis-sentinel.vercel.app",
+        "https://vectis.vercel.app",
+    ],
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
@@ -47,7 +52,13 @@ def health():
         "status": "ok",
         "engine": "vectis-sentinel-v1.0",
         "runtime": "deterministic-ast-dag",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "dependencies": {
+            "watsonx": "configured" if os.getenv("WATSONX_APIKEY") else "offline-deterministic",
+            "github_token": "configured" if os.getenv("GITHUB_TOKEN") else "public-client-mode",
+            "ast_engine": "active",
+            "dag_nodes": dag_engine.get_total_node_count()
+        }
     }
 
 @app.get("/api/graph")
@@ -318,7 +329,7 @@ def github_webhook(payload: Dict[str, Any]):
         "risk_score": risk["total_score"],
         "checks_api_status": "failure" if verdict == "BLOCK" else "success",
         "merge_button_status": "DISABLED_BY_VECTIS" if verdict == "BLOCK" else "ENABLED",
-        "remediation_cockpit_url": f"http://localhost:3000/cockpit?repo={repo_name}&pr={pr_number}",
+        "remediation_cockpit_url": f"{os.getenv('FRONTEND_BASE_URL', 'https://vectis-sentinel.vercel.app')}/cockpit?repo={repo_name}&pr={pr_number}",
         "breaking_changes": mutations,
         "downstream_impact": unique_impact
     }

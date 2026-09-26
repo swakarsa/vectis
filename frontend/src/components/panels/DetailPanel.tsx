@@ -28,6 +28,7 @@ interface DetailPanelProps {
   onDownloadPassport?: () => void;
   passportAvailable?: boolean;
   onExportSecurityAudit?: () => void;
+  selectedNodeId?: string | null;
 }
 
 export function DetailPanel({
@@ -42,6 +43,7 @@ export function DetailPanel({
   onDownloadPassport,
   passportAvailable,
   onExportSecurityAudit,
+  selectedNodeId,
 }: DetailPanelProps) {
   const [activeTab, setActiveTab] = useState<"breaking" | "impact" | "shim" | "compliance">("breaking");
   const [copied, setCopied] = useState(false);
@@ -136,6 +138,25 @@ export function DetailPanel({
                 description: {
                   text: "Apply IBM Granite 3.0 auto-heal compatibility shim.",
                 },
+                artifactChanges: [
+                  {
+                    artifactLocation: {
+                      uri: change.file_path || "src/auth/session.ts",
+                      uriBaseId: "%SRCROOT%",
+                    },
+                    replacements: [
+                      {
+                        deletedRegion: {
+                          startLine: change.line_number || 12,
+                          startColumn: 1,
+                        },
+                        insertedContent: {
+                          text: "// Vectis Auto-Heal Shim: backward-compatibility proxy\n",
+                        },
+                      },
+                    ],
+                  },
+                ],
               },
             ],
           })),
@@ -159,14 +180,16 @@ export function DetailPanel({
   const isIdle = verdict === "IDLE";
 
   return (
-    <aside className="w-[420px] border-l border-white/[0.08] bg-[#0c0d10] flex flex-col h-full select-none shrink-0">
+    <aside className="w-full lg:w-[420px] border-l border-white/[0.08] bg-[#0c0d10] flex flex-col h-full select-none shrink-0 overflow-hidden">
       {/* Top Metrics Section */}
       <div className="p-4 border-b border-white/[0.08] bg-[#0e0f13]">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold">
             Telemetry & Blast Radius
           </span>
-          <span className="text-[11px] text-zinc-500 font-mono">Tree-sitter AST</span>
+          <span className="text-[11px] text-zinc-400 tabular-nums font-sans">
+            {selectedNodeId ? `Focus: ${selectedNodeId}` : "Deterministic AST"}
+          </span>
         </div>
 
         {/* Score & Verdict */}
@@ -344,7 +367,7 @@ export function DetailPanel({
                       <WarningCircle size={14} weight="bold" />
                       <span>{change.symbol_name}</span>
                     </div>
-                    <span className="text-[10px] text-zinc-500 font-mono">
+                    <span className="text-[10px] text-zinc-500 tabular-nums font-sans">
                       L{change.line_number || 12}
                     </span>
                   </div>
@@ -356,11 +379,11 @@ export function DetailPanel({
                   <div className="border border-white/[0.05] rounded-[3px] p-2 bg-[#090a0d] space-y-1">
                     <div className="flex items-center gap-2 text-[11px]">
                       <span className="text-rose-400 shrink-0 font-medium text-[10px]">OLD:</span>
-                      <span className="text-zinc-300 truncate font-mono text-[10px]">{change.old_signature}</span>
+                      <span className="text-zinc-300 truncate tabular-nums font-sans text-[10px]">{change.old_signature}</span>
                     </div>
                     <div className="flex items-center gap-2 text-[11px]">
                       <span className="text-emerald-400 shrink-0 font-medium text-[10px]">NEW:</span>
-                      <span className="text-zinc-300 truncate font-mono text-[10px]">{change.new_signature}</span>
+                      <span className="text-zinc-300 truncate tabular-nums font-sans text-[10px]">{change.new_signature}</span>
                     </div>
                   </div>
                 </div>
@@ -393,10 +416,10 @@ export function DetailPanel({
                     <div className="text-[11px] text-zinc-500">{item.service || "Downstream Service"}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] font-mono text-amber-400 font-semibold">
+                    <div className="text-[10px] tabular-nums font-sans text-amber-400 font-semibold">
                       HOP {item.dependency_depth || 1}
                     </div>
-                    <div className="text-[10px] text-zinc-500">
+                    <div className="text-[10px] text-zinc-500 tabular-nums font-sans">
                       Crit: {item.criticality || 1.0}
                     </div>
                   </div>
@@ -415,7 +438,7 @@ export function DetailPanel({
                   <Cpu size={14} />
                   <span>IBM Granite 3.0 Code Synthesizer</span>
                 </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-[2px] bg-emerald-500/20 text-emerald-300 font-mono">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-[2px] bg-emerald-500/20 text-emerald-300 tabular-nums font-sans">
                   4 PROXY TRAPS
                 </span>
               </div>
@@ -426,7 +449,7 @@ export function DetailPanel({
 
             <div className="relative border border-white/[0.08] rounded-[4px] bg-[#08090b] p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-mono text-zinc-500">auth_adapter.ts</span>
+                <span className="text-[10px] tabular-nums font-sans text-zinc-500">auth_adapter.ts</span>
                 <button
                   onClick={copyShim}
                   className="text-[11px] text-zinc-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
@@ -435,7 +458,7 @@ export function DetailPanel({
                   <span>{copied ? "Copied!" : "Copy"}</span>
                 </button>
               </div>
-              <pre className="text-[11px] text-zinc-300 font-mono overflow-x-auto max-h-48 leading-relaxed whitespace-pre">
+              <pre className="text-[11px] text-zinc-300 tabular-nums font-sans overflow-x-auto max-h-48 leading-relaxed whitespace-pre">
                 {shimCode}
               </pre>
             </div>
@@ -491,7 +514,7 @@ export function DetailPanel({
                   <Scales size={14} />
                   <span>PCI-DSS v4.0.1 Compliance</span>
                 </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-[2px] bg-indigo-500/20 text-indigo-300 font-mono">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-[2px] bg-indigo-500/20 text-indigo-300 tabular-nums font-sans">
                   IBM DOCLING
                 </span>
               </div>

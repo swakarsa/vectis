@@ -272,7 +272,26 @@ class SARIFExporter:
                             "text": (
                                 f"Apply IBM Granite 3.0 auto-heal shim: {v.remediation_guidance}"
                             )
-                        }
+                        },
+                        "artifactChanges": [
+                            {
+                                "artifactLocation": {
+                                    "uri": normalized_path,
+                                    "uriBaseId": "%SRCROOT%",
+                                },
+                                "replacements": [
+                                    {
+                                        "deletedRegion": {
+                                            "startLine": start_line,
+                                            "startColumn": 1,
+                                        },
+                                        "insertedContent": {
+                                            "text": f"// Vectis Auto-Heal Shim: {v.remediation_guidance}\n",
+                                        },
+                                    }
+                                ],
+                            }
+                        ],
                     }
                 ],
                 "properties": {

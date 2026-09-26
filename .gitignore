@@ -31,3 +31,9 @@ out/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local watcher scripts
+antigravity_watcher.py
+run_watcher.bat
+watcher.log
+

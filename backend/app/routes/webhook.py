@@ -12,7 +12,7 @@ from ..risk.scorer import BlastRiskCalculator
 router = APIRouter(prefix="/api/webhook", tags=["Webhook"])
 
 WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "")
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "https://vectis-sentinel.vercel.app")
 
 def verify_signature(payload: bytes, signature_header: Optional[str]) -> bool:
     if not WEBHOOK_SECRET:

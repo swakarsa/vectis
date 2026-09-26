@@ -9,6 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://vectis-sentinel.vercel.app"),
   title: "Vectis | Autonomous Release Safety & Semantic Blast-Radius Intelligence",
   description: "Autonomous pre-merge release safety engine powered by IBM Bob 2.0 & Granite 3.0",
   openGraph: {

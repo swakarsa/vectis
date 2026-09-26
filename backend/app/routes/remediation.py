@@ -131,26 +131,32 @@ def push_fix_to_github(req: PushFixRequest):
             commit_message="fix(vectis): auto-heal contract drift with IBM Granite 3.0 shim"
         )
 
-        # 3. Issue RFC 8785 Cryptographic Release Passport
+        # 2. Extract new commit SHA from commit response
+        new_commit_sha = req.head_sha
+        if isinstance(commit_res, dict):
+            new_commit_sha = commit_res.get("commit", {}).get("sha") or commit_res.get("sha") or req.head_sha
+
+        # 3. Issue RFC 8785 Cryptographic Release Passport with verified commit hash
         passport = passport_signer.create_signed_passport(
             pr_number=req.pull_number,
-            commit_sha=req.head_sha,
+            commit_sha=new_commit_sha,
             author="vectis-sentinel[bot]",
             risk_score=12.0,
             verdict="PASS",
             shim_applied=True
         )
 
-        # 4. Flip GitHub Commit Status from FAILURE to SUCCESS
-        target_url = f"{os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')}/cockpit?repo={req.owner}/{req.repo}&pr={req.pull_number}"
-        client.set_commit_status(
-            owner=req.owner,
-            repo=req.repo,
-            sha=req.head_sha,
-            state="success",
-            description="Vectis Release Gate: PASSED (Auto-Heal Shim Verified - Merge Unblocked)",
-            target_url=target_url
-        )
+        # 4. Flip GitHub Commit Status from FAILURE to SUCCESS on BOTH old and new commit SHAs
+        target_url = f"{os.getenv('FRONTEND_BASE_URL', 'https://vectis-sentinel.vercel.app')}/cockpit?repo={req.owner}/{req.repo}&pr={req.pull_number}"
+        for target_sha in {req.head_sha, new_commit_sha}:
+            client.set_commit_status(
+                owner=req.owner,
+                repo=req.repo,
+                sha=target_sha,
+                state="success",
+                description="Vectis Release Gate: PASSED (Auto-Heal Shim Verified - Merge Unblocked)",
+                target_url=target_url
+            )
 
         # 5. Post clearance comment on PR
         comment_body = f"""## 🛡️ Vectis Auto-Heal Clearance

@@ -337,26 +337,26 @@ def format_granite_prompt(
     system: str,
     user: str,
     few_shot_examples: Optional[List[Dict[str, str]]] = None,
+    format_version: str = "v1",
 ) -> str:
     """Format a prompt using Granite 3.0 special chat tokens.
 
-    Parameters
-    ----------
-    system:
-        System-role instruction (everything the model should know about its
-        task, persona, and constraints).
-    user:
-        The user-turn message containing the actual request.
-    few_shot_examples:
-        Optional list of ``{"user": str, "assistant": str}`` example turns
-        to include between the system block and the final user turn.
-
-    Returns
-    -------
-    str
-        A formatted prompt string ready to pass to the ``input`` field of
-        the watsonx.ai generation request.
+    Supports both legacy v1 format (<|system|>) and native Granite 3.0
+    ChatML format (<|start_of_role|>system<|end_of_role|>).
     """
+    if format_version == "granite-3.0":
+        parts: List[str] = [f"<|start_of_role|>system\n{system.strip()}<|end_of_role|>"]
+        if few_shot_examples:
+            for ex in few_shot_examples:
+                u = ex.get("user", "").strip()
+                a = ex.get("assistant", "").strip()
+                if u and a:
+                    parts.append(f"<|start_of_role|>user\n{u}<|end_of_role|>")
+                    parts.append(f"<|start_of_role|>assistant\n{a}<|end_of_role|>")
+        parts.append(f"<|start_of_role|>user\n{user.strip()}<|end_of_role|>")
+        parts.append("<|start_of_role|>assistant")
+        return "\n".join(parts)
+
     parts: List[str] = [f"<|system|>\n{system.strip()}"]
 
     if few_shot_examples:
@@ -444,33 +444,44 @@ def extract_json_payload(text: str) -> Optional[dict]:
 
 
 class _CircuitBreaker:
-    """Simple closed/open circuit breaker for the watsonx.ai HTTP client.
+    """Closed/open/half-open circuit breaker for the watsonx.ai HTTP client.
 
     States
     ------
     closed (``_failures < threshold``):
-        Normal operation.  All requests pass through.
+        Normal operation. All requests pass through.
     open (``_failures >= threshold``):
-        API is considered unhealthy.  :meth:`allow_request` returns ``False``
-        and the client falls back to the offline engine.
+        API is considered unhealthy. Falls back to offline engine until cooldown expires.
+    half-open:
+        After cooldown seconds, allows a canary trial request to test API recovery.
     """
 
-    def __init__(self, failure_threshold: int = CIRCUIT_BREAKER_FAILURE_THRESHOLD) -> None:
+    def __init__(self, failure_threshold: int = CIRCUIT_BREAKER_FAILURE_THRESHOLD, cooldown_seconds: float = 60.0) -> None:
         self._threshold = failure_threshold
+        self._cooldown = cooldown_seconds
         self._failures: int = 0
+        self._opened_at: Optional[float] = None
 
     def allow_request(self) -> bool:
-        """Return ``True`` when the circuit is closed (healthy)."""
-        return self._failures < self._threshold
+        """Return ``True`` when the circuit is closed (healthy) or half-open (trial)."""
+        if self._failures < self._threshold:
+            return True
+        if self._opened_at and (time.time() - self._opened_at >= self._cooldown):
+            logger.info("WatsonxGraniteClient: circuit breaker HALF-OPEN, allowing trial request")
+            return True
+        return False
 
     def record_success(self) -> None:
         """Reset the failure counter on a successful call."""
         self._failures = 0
+        self._opened_at = None
 
     def record_failure(self) -> None:
         """Increment the failure counter."""
         self._failures += 1
         if self._failures >= self._threshold:
+            if not self._opened_at:
+                self._opened_at = time.time()
             logger.warning(
                 "WatsonxGraniteClient: circuit breaker OPEN after %d consecutive failures",
                 self._failures,
@@ -479,7 +490,11 @@ class _CircuitBreaker:
     @property
     def is_open(self) -> bool:
         """``True`` when the circuit is open (unhealthy)."""
-        return self._failures >= self._threshold
+        if self._failures < self._threshold:
+            return False
+        if self._opened_at and (time.time() - self._opened_at >= self._cooldown):
+            return False  # Half-open allows testing
+        return True
 
 
 # ---------------------------------------------------------------------------

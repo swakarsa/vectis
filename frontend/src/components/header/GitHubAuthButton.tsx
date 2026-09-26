@@ -173,7 +173,7 @@ export const GitHubAuthButton: React.FC = () => {
                     <ShieldCheck size={14} />
                     <span>1-Click Team Account</span>
                   </div>
-                  <span className="text-[10px] text-zinc-500 font-mono">swakarsa</span>
+                  <span className="text-[10px] text-zinc-500 tabular-nums font-sans">swakarsa</span>
                 </div>
                 <p className="text-[11px] text-zinc-400">
                   Instant connection for testing with the official team identity and sample repositories.

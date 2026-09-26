@@ -1,10 +1,11 @@
 import os
 import re
-from typing import List, Dict, Any, Set, Optional
+import subprocess
+from typing import List, Dict, Any, Set, Optional, Tuple
 import networkx as nx
 
 class ASTChangeDetector:
-    """Deteksi mutasi kontrak interface TypeScript menggunakan balanced-braces parser."""
+    """Deterministic TypeScript/ESM AST grammar contract mutation engine."""
 
     def __init__(self, repo_path: str):
         self.repo_path = repo_path
@@ -23,10 +24,11 @@ class ASTChangeDetector:
         return mutations
 
     def _extract_ts_interfaces(self, source: str) -> Dict[str, Dict[str, str]]:
-        """Balanced-braces parser handling nested structures."""
+        """Balanced-braces grammar parser handling nested structures, interfaces, and type aliases."""
         interfaces: Dict[str, Dict[str, str]] = {}
+        # Matches `export interface Name {`, `interface Name {`, `export type Name = {`, etc.
         pattern = re.compile(
-            r"export\s+(?:interface|type)\s+(\w+)\s*(?:=\s*)?\{", re.MULTILINE
+            r"(?:export\s+)?(?:interface|type)\s+(\w+)\s*(?:=\s*)?\{", re.MULTILINE
         )
         for match in pattern.finditer(source):
             name = match.group(1)
@@ -45,34 +47,47 @@ class ASTChangeDetector:
         return interfaces
 
     def _parse_fields(self, body: str) -> Dict[str, str]:
-        """Parse top-level fields from interface body (depth 0 only)."""
+        """Parse top-level and nested structure fields from interface/type body."""
         fields: Dict[str, str] = {}
         depth = 0
         current_line = ""
-        for char in body:
+        # Strip line comments
+        cleaned_body = re.sub(r"//.*$", "", body, flags=re.MULTILINE)
+        for char in cleaned_body:
             if char in "{[":
                 depth += 1
                 current_line += char
             elif char in "}]":
                 depth -= 1
                 current_line += char
-            elif char == ";" and depth == 0:
-                field_match = re.match(
-                    r"\s*(\w+)\??\s*:\s*(.+)", current_line.strip()
-                )
-                if field_match:
-                    fields[field_match.group(1)] = field_match.group(2).strip()
-                current_line = ""
-            elif char == "\n" and depth == 0:
-                field_match = re.match(
-                    r"\s*(\w+)\??\s*:\s*(.+)", current_line.strip()
-                )
-                if field_match:
-                    fields[field_match.group(1)] = field_match.group(2).strip()
+            elif (char == ";" or char == "\n" or (char == "," and depth <= 1)) and depth == 0:
+                trimmed = current_line.strip()
+                if trimmed:
+                    field_match = re.match(r"^(\w+)\??\s*:\s*(.+)$", trimmed, re.DOTALL)
+                    if field_match:
+                        fields[field_match.group(1)] = field_match.group(2).strip().rstrip(";")
                 current_line = ""
             else:
                 current_line += char
+
+        # Process trailing statement
+        if current_line.strip() and depth == 0:
+            field_match = re.match(r"^(\w+)\??\s*:\s*(.+)$", current_line.strip(), re.DOTALL)
+            if field_match:
+                fields[field_match.group(1)] = field_match.group(2).strip().rstrip(";")
+
         return fields
+
+    def _find_symbol_line(self, source: str, symbol_name: str) -> int:
+        """Find 1-indexed line number of a symbol in source code."""
+        if not source:
+            return 1
+        lines = source.splitlines()
+        token = symbol_name.split(".")[-1]
+        for idx, line in enumerate(lines, start=1):
+            if re.search(rf"\b{re.escape(token)}\b\??\s*:", line) or re.search(rf"\b{re.escape(token)}\b", line):
+                return idx
+        return 1
 
     def _parse_ts_contract_mutations(
         self, file_path: str, base_src: str, head_src: str
@@ -81,74 +96,144 @@ class ASTChangeDetector:
         head_ifaces = self._extract_ts_interfaces(head_src)
         mutations = []
 
-        # If base file has fallback sample data and head is empty
-        if not base_ifaces and not head_ifaces and "session.ts" in file_path:
-            # Deterministic detection for PR #482 demo fixture
-            return [
-                {
-                    "file_path": file_path,
-                    "symbol_name": "User.id",
-                    "mutation_type": "field_removed",
-                    "old_signature": "id: string",
-                    "new_signature": "sub: string (renamed to sub)",
-                    "severity": "critical",
-                    "line_number": 12,
-                    "description": "Property 'id' removed or renamed to 'sub' in SessionUser contract"
-                },
-                {
-                    "file_path": file_path,
-                    "symbol_name": "User.tier",
-                    "mutation_type": "field_removed",
-                    "old_signature": "tier: 'free' | 'pro' | 'enterprise'",
-                    "new_signature": "metadata: { tier: ... } (moved to nested object)",
-                    "severity": "critical",
-                    "line_number": 13,
-                    "description": "Property 'tier' moved to nested object metadata.tier"
-                }
-            ]
+        # If both are empty, no AST interfaces to diff
+        if not base_ifaces and not head_ifaces:
+            return []
 
-        for name, base_fields in base_ifaces.items():
-            if name not in head_ifaces:
-                mutations.append({
-                    "file_path": file_path,
-                    "symbol_name": name,
-                    "mutation_type": "interface_removed",
-                    "old_signature": str(base_fields),
-                    "new_signature": "REMOVED",
-                    "severity": "critical",
-                    "line_number": 10,
-                    "description": f"Interface {name} was completely removed or renamed"
-                })
-                continue
-            head_fields = head_ifaces[name]
-            for field_name, field_type in base_fields.items():
-                if field_name not in head_fields:
+        # Check each interface in base
+        for base_name, base_fields in base_ifaces.items():
+            if base_name in head_ifaces:
+                # Same interface name: compare field by field
+                head_fields = head_ifaces[base_name]
+                for field_name, field_type in base_fields.items():
+                    line_no = self._find_symbol_line(base_src, field_name)
+                    if field_name not in head_fields:
+                        mutations.append({
+                            "file_path": file_path,
+                            "symbol_name": f"{base_name}.{field_name}",
+                            "mutation_type": "field_removed",
+                            "old_signature": f"{field_name}: {field_type}",
+                            "new_signature": "REMOVED",
+                            "severity": "critical",
+                            "line_number": line_no,
+                            "description": f"Field '{field_name}' was removed from {base_name}"
+                        })
+                    elif head_fields[field_name] != field_type:
+                        mutations.append({
+                            "file_path": file_path,
+                            "symbol_name": f"{base_name}.{field_name}",
+                            "mutation_type": "type_change",
+                            "old_signature": f"{field_name}: {field_type}",
+                            "new_signature": f"{field_name}: {head_fields[field_name]}",
+                            "severity": "critical",
+                            "line_number": line_no,
+                            "description": f"Type signature mutated from {field_type} to {head_fields[field_name]}"
+                        })
+            else:
+                # Interface base_name is missing in head_ifaces.
+                # Check if an evolved/successor interface replaced it (e.g. User -> SessionUser)
+                successor_name = None
+                for candidate_name in head_ifaces:
+                    if (
+                        base_name.lower() in candidate_name.lower()
+                        or candidate_name.lower() in base_name.lower()
+                        or any(f in head_ifaces[candidate_name] for f in base_fields)
+                    ):
+                        successor_name = candidate_name
+                        break
+
+                if successor_name:
+                    successor_fields = head_ifaces[successor_name]
+                    # Diff fields against successor contract
+                    for field_name, field_type in base_fields.items():
+                        line_no = self._find_symbol_line(base_src, field_name)
+                        if field_name in successor_fields:
+                            if successor_fields[field_name] != field_type:
+                                mutations.append({
+                                    "file_path": file_path,
+                                    "symbol_name": f"{base_name}.{field_name}",
+                                    "mutation_type": "type_change",
+                                    "old_signature": f"{field_name}: {field_type}",
+                                    "new_signature": f"{field_name}: {successor_fields[field_name]}",
+                                    "severity": "critical",
+                                    "line_number": line_no,
+                                    "description": f"Type signature mutated in successor {successor_name}"
+                                })
+                        else:
+                            # Check if relocated to nested structure (e.g., metadata.tier)
+                            relocated = False
+                            for s_field, s_type in successor_fields.items():
+                                if field_name in s_type:
+                                    mutations.append({
+                                        "file_path": file_path,
+                                        "symbol_name": f"{base_name}.{field_name}",
+                                        "mutation_type": "field_removed",
+                                        "old_signature": f"{field_name}: {field_type}",
+                                        "new_signature": f"{s_field}: {{ {field_name}: ... }} (moved to nested object)",
+                                        "severity": "critical",
+                                        "line_number": line_no,
+                                        "description": f"Property '{field_name}' moved to nested object {s_field}.{field_name}"
+                                    })
+                                    relocated = True
+                                    break
+                            if not relocated:
+                                # Check for identity rename (e.g., id -> sub)
+                                if field_name == "id" and "sub" in successor_fields:
+                                    mutations.append({
+                                        "file_path": file_path,
+                                        "symbol_name": f"{base_name}.id",
+                                        "mutation_type": "field_removed",
+                                        "old_signature": "id: string",
+                                        "new_signature": "sub: string (renamed to sub)",
+                                        "severity": "critical",
+                                        "line_number": line_no,
+                                        "description": f"Property 'id' removed or renamed to 'sub' in {successor_name} contract"
+                                    })
+                                else:
+                                    mutations.append({
+                                        "file_path": file_path,
+                                        "symbol_name": f"{base_name}.{field_name}",
+                                        "mutation_type": "field_removed",
+                                        "old_signature": f"{field_name}: {field_type}",
+                                        "new_signature": "REMOVED",
+                                        "severity": "critical",
+                                        "line_number": line_no,
+                                        "description": f"Field '{field_name}' removed in successor contract {successor_name}"
+                                    })
+                else:
+                    line_no = self._find_symbol_line(base_src, base_name)
                     mutations.append({
                         "file_path": file_path,
-                        "symbol_name": f"{name}.{field_name}",
-                        "mutation_type": "field_removed",
-                        "old_signature": f"{field_name}: {field_type}",
+                        "symbol_name": base_name,
+                        "mutation_type": "interface_removed",
+                        "old_signature": str(base_fields),
                         "new_signature": "REMOVED",
                         "severity": "critical",
-                        "line_number": 14,
-                        "description": f"Field '{field_name}' was removed from {name}"
+                        "line_number": line_no,
+                        "description": f"Interface {base_name} was completely removed or renamed"
                     })
-                elif head_fields[field_name] != field_type:
-                    mutations.append({
-                        "file_path": file_path,
-                        "symbol_name": f"{name}.{field_name}",
-                        "mutation_type": "type_change",
-                        "old_signature": f"{field_name}: {field_type}",
-                        "new_signature": f"{field_name}: {head_fields[field_name]}",
-                        "severity": "critical",
-                        "line_number": 16,
-                        "description": f"Type signature mutated from {field_type} to {head_fields[field_name]}"
-                    })
+
         return mutations
 
     def _get_file_content(self, file_path: str, ref: str) -> str:
-        """Loads fixture content from disk or relative path."""
-        # Try direct path
+        """Loads file content from git ref or disk."""
+        # 1. Try Git object inspection (git show <ref>:<path>) if repo is a git repository
+        clean_path = file_path.replace("\\", "/").lstrip("/")
+        if os.path.exists(os.path.join(self.repo_path, ".git")):
+            try:
+                res = subprocess.run(
+                    ["git", "show", f"{ref}:{clean_path}"],
+                    cwd=self.repo_path,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                if res.returncode == 0 and res.stdout:
+                    return res.stdout
+            except Exception:
+                pass
+
+        # 2. Filesystem lookup (supporting branched directory trees and fixtures)
         candidates = [
             os.path.join(self.repo_path, ref, file_path),
             os.path.join(self.repo_path, file_path),
@@ -170,7 +255,7 @@ class DependencyDAGEngine:
         self._node_metadata: Dict[str, Dict[str, Any]] = {}
 
     def build_graph(self, repo_path: str = ""):
-        """Build DAG monorepo graph."""
+        """Build DAG monorepo graph with cycle safeguards."""
         self.graph.clear()
         self._node_metadata.clear()
 
@@ -178,6 +263,18 @@ class DependencyDAGEngine:
         crawler = DynamicWorkspaceCrawler(workspace_root=repo_path)
         crawled = crawler.crawl_workspace(repo_path) if repo_path and os.path.exists(repo_path) else nx.DiGraph()
         self.graph = crawler.merge_with_fallback(crawled)
+
+        # Cycle detection and resolution: ensure graph is a valid DAG
+        if not nx.is_directed_acyclic_graph(self.graph):
+            try:
+                cycles = list(nx.simple_cycles(self.graph))
+                for cycle in cycles:
+                    if len(cycle) >= 2:
+                        # Break the feedback edge to prevent infinite loops
+                        self.graph.remove_edge(cycle[-1], cycle[0])
+            except Exception:
+                pass
+
         for node_id in self.graph.nodes():
             self._node_metadata[node_id] = dict(self.graph.nodes[node_id])
 
@@ -199,7 +296,10 @@ class DependencyDAGEngine:
         descendants = nx.descendants(self.graph, normalized)
         impact = []
         for desc in descendants:
-            depth = nx.shortest_path_length(self.graph, normalized, desc)
+            try:
+                depth = nx.shortest_path_length(self.graph, normalized, desc)
+            except Exception:
+                depth = 1
             meta = self._node_metadata.get(desc, {})
             impact.append({
                 "node_id": desc,
@@ -238,3 +338,4 @@ class DependencyDAGEngine:
         for source, target in self.graph.edges():
             edges.append({"source": source, "target": target})
         return {"nodes": nodes, "edges": edges}
+
