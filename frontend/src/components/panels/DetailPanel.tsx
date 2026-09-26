@@ -48,7 +48,7 @@ export function DetailPanel({
   const isIdle = verdict === "IDLE";
 
   return (
-    <aside className="w-[400px] border-l border-white/[0.08] bg-[#0c0d10] flex flex-col h-full select-none">
+    <aside className="w-[420px] border-l border-white/[0.08] bg-[#0c0d10] flex flex-col h-full select-none shrink-0">
       {/* Top Metrics Section */}
       <div className="p-4 border-b border-white/[0.08] bg-[#0e0f13]">
         <div className="flex items-center justify-between mb-2">
@@ -148,11 +148,11 @@ export function DetailPanel({
         </div>
       </div>
 
-      {/* Tab Navigation (Clean Linear style) */}
-      <div className="flex border-b border-white/[0.08] bg-[#090a0d] px-2 text-xs gap-1">
+      {/* Tab Navigation (Single-line, no wrapping) */}
+      <div className="flex border-b border-white/[0.08] bg-[#090a0d] px-1 text-xs">
         <button
           onClick={() => setActiveTab("breaking")}
-          className={`px-3 py-2.5 font-medium border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`flex-1 min-w-0 py-2.5 px-1.5 font-medium border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === "breaking"
               ? breakingChanges.length > 0
                 ? "border-rose-500 text-white"
@@ -162,14 +162,14 @@ export function DetailPanel({
         >
           <WarningCircle
             size={13}
-            className={breakingChanges.length > 0 ? "text-rose-400" : "text-zinc-500"}
+            className={`shrink-0 ${breakingChanges.length > 0 ? "text-rose-400" : "text-zinc-500"}`}
           />
-          <span>Breaking ({breakingChanges.length})</span>
+          <span className="whitespace-nowrap">Breaking ({breakingChanges.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("impact")}
-          className={`px-3 py-2.5 font-medium border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`flex-1 min-w-0 py-2.5 px-1.5 font-medium border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === "impact"
               ? "border-amber-400 text-white"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
@@ -177,33 +177,33 @@ export function DetailPanel({
         >
           <TreeStructure
             size={13}
-            className={downstreamImpact.length > 0 ? "text-amber-400" : "text-zinc-500"}
+            className={`shrink-0 ${downstreamImpact.length > 0 ? "text-amber-400" : "text-zinc-500"}`}
           />
-          <span>Impact ({downstreamImpact.length})</span>
+          <span className="whitespace-nowrap">Impact ({downstreamImpact.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("shim")}
-          className={`px-3 py-2.5 font-medium border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`flex-1 min-w-0 py-2.5 px-1.5 font-medium border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === "shim"
               ? "border-emerald-400 text-white"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
           }`}
         >
-          <Cpu size={13} className="text-emerald-400" />
-          <span>Auto-Heal</span>
+          <Cpu size={13} className="shrink-0 text-emerald-400" />
+          <span className="whitespace-nowrap">Auto-Heal</span>
         </button>
 
         <button
           onClick={() => setActiveTab("compliance")}
-          className={`px-3 py-2.5 font-medium border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`flex-1 min-w-0 py-2.5 px-1.5 font-medium border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === "compliance"
               ? "border-indigo-400 text-white"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
           }`}
         >
-          <Scales size={13} className="text-indigo-400" />
-          <span>Docling</span>
+          <Scales size={13} className="shrink-0 text-indigo-400" />
+          <span className="whitespace-nowrap">Docling</span>
         </button>
       </div>
 
