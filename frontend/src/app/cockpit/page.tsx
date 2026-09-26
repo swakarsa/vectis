@@ -17,6 +17,7 @@ import "@xyflow/react/dist/style.css";
 import { BlastNode } from "@/components/canvas/BlastNode";
 import { CockpitHeader } from "@/components/header/CockpitHeader";
 import { DetailPanel } from "@/components/panels/DetailPanel";
+import { pushAutoHealFix } from "@/lib/github";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -311,6 +312,24 @@ export default function VectisCockpitPage() {
       setChecksStatus("success");
       setMergeLocked(false);
       setPushedToPR(true);
+
+      // If in live GitHub mode, push the auto-heal shim directly to PR branch
+      if (mode === "live_github" && repoName && prNumber) {
+        const parts = repoName.split("/");
+        const owner = parts[0] || "swakarsa";
+        const repo = parts[1] || repoName;
+        try {
+          await pushAutoHealFix({
+            owner,
+            repo,
+            pullNumber: prNumber,
+            branch: headBranch,
+            headSha: data.release_passport?.commit_sha || "c8a9f24e9b7d81023",
+          });
+        } catch (e) {
+          console.warn("Live GitHub PR push error:", e);
+        }
+      }
 
       // Transition nodes to healed
       setNodes((currentNodes) =>

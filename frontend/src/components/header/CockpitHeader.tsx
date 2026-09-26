@@ -12,6 +12,7 @@ import {
   TerminalWindow,
   ArrowLeft,
 } from "@phosphor-icons/react";
+import { GitHubAuthButton } from "./GitHubAuthButton";
 
 interface CockpitHeaderProps {
   verdict: "BLOCK" | "WARN" | "PASS" | "IDLE";
@@ -157,6 +158,8 @@ export function CockpitHeader({
 
       {/* Right Action Buttons (Crisp rectangular style, no pills) */}
       <div className="flex items-center gap-2.5">
+        <GitHubAuthButton />
+
         {passportAvailable && (
           <button
             onClick={onDownloadPassport}

@@ -10,6 +10,10 @@ from .schemas.blast import (
     BreakingChange, DownstreamNode, RiskAssessment
 )
 
+from .routes.webhook import router as webhook_router
+from .routes.github_auth import router as github_auth_router
+from .routes.remediation import router as remediation_router
+
 app = FastAPI(
     title="Vectis Sentinel API",
     description="Autonomous Release Safety & Semantic Blast-Radius Intelligence",
@@ -19,10 +23,15 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://vectis.vercel.app"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(webhook_router)
+app.include_router(github_auth_router)
+app.include_router(remediation_router)
 
 dag_engine = DependencyDAGEngine()
 risk_calculator = BlastRiskCalculator()

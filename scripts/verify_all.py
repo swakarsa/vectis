@@ -14,8 +14,8 @@ import json
 import urllib.request
 from pathlib import Path
 
-BACKEND_URL = "http://localhost:8000"
-FRONTEND_URL = "http://localhost:3000"
+BACKEND_URL = "http://127.0.0.1:8000"
+FRONTEND_URL = "http://127.0.0.1:3000"
 
 def log_step(title):
     print(f"\n[STEP] {title}")
