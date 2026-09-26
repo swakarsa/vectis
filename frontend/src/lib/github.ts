@@ -1,5 +1,5 @@
 /**
- * GitHub API & Defender client helpers for Vectis Cockpit
+ * GitHub API & Sentinel client helpers for Vectis Cockpit
  * Supports direct client-side GitHub REST API calls (browser-compatible with CORS)
  * as well as backend proxy routes.
  */

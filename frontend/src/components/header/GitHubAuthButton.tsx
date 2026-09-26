@@ -111,9 +111,9 @@ export const GitHubAuthButton: React.FC = () => {
             <GithubLogo size={13} className="text-white" />
           </div>
           <span className="text-zinc-200 font-medium text-xs shrink-0">{user.login}</span>
-          <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono shrink-0">
+          <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold tracking-tight shrink-0">
             <CheckCircle size={10} weight="fill" />
-            Defender Active
+            Sentinel Active
           </span>
           <button
             onClick={handleSignOut}

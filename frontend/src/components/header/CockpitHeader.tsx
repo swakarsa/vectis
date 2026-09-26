@@ -98,26 +98,26 @@ export function CockpitHeader({
         <div className="flex items-center bg-[#131418] border border-white/[0.08] rounded-[3px] p-0.5 text-[11px] shrink-0 whitespace-nowrap">
           <button
             onClick={() => onModeChange?.("benchmark")}
-            className={`px-2 py-0.5 rounded-[2px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`px-2.5 py-0.5 rounded-[2px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               mode === "benchmark"
                 ? "bg-zinc-800 text-white shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
-            title="Jury Simulation Sandbox (Pre-configured PR #482 OIDC contract drift)"
+            title="Simulation Sandbox (Pre-configured PR #482 OIDC contract drift benchmark)"
           >
-            Jury Sandbox
+            Simulation Sandbox
           </button>
           <button
             onClick={() => onModeChange?.("live_github")}
-            className={`px-2 py-0.5 rounded-[2px] font-medium transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`px-2.5 py-0.5 rounded-[2px] font-medium transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
               mode === "live_github"
                 ? "bg-zinc-800 text-emerald-300 shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
-            title="Swakarsa Live Defender (Direct real-time GitHub Bot connected to your repositories)"
+            title="Vectis Live Sentinel (Real-time release gate & AST interceptor connected to your repositories)"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-            <span>Live Defender</span>
+            <span>Live Sentinel</span>
           </button>
         </div>
       </div>
