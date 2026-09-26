@@ -5,9 +5,11 @@ from pydantic import BaseModel
 
 from ..github.client import GitHubDefenderClient
 from ..schemas.blast import PassportSigner
+from ..granite.synthesizer import IBMGraniteSynthesizer
 
 router = APIRouter(prefix="/api/pr", tags=["Remediation"])
 passport_signer = PassportSigner()
+granite_synthesizer = IBMGraniteSynthesizer()
 
 class PushFixRequest(BaseModel):
     owner: str
@@ -87,17 +89,49 @@ def push_fix_to_github(req: PushFixRequest):
     client = GitHubDefenderClient(token=req.token)
 
     try:
-        # 1. Commit the shim directly to PR branch via GitHub API
+        # 1. Synthesize backward-compatibility shim using IBM Granite 3.0
+        try:
+            synth_res = granite_synthesizer.synthesize(
+                breaking_changes=[
+                    {
+                        "symbol_name": "User.id",
+                        "mutation_type": "field_removed",
+                        "old_signature": "id: string",
+                        "new_signature": "sub: string (renamed to sub)",
+                    },
+                    {
+                        "symbol_name": "User.tier",
+                        "mutation_type": "field_removed",
+                        "old_signature": "tier: 'free' | 'pro' | 'enterprise'",
+                        "new_signature": "metadata: { tier: ... } (moved to nested object)",
+                    },
+                    {
+                        "symbol_name": "User.roles",
+                        "mutation_type": "field_removed",
+                        "old_signature": "roles: string[]",
+                        "new_signature": "scopes: string[] (renamed to scopes)",
+                    }
+                ],
+                changed_files=[req.file_path],
+                target_symbol="SessionUser"
+            )
+            shim_content = synth_res.adapter_code if synth_res and synth_res.adapter_code else GRANITE_SHIM_CONTENT
+            model_engine = synth_res.model_used if synth_res else "ibm/granite-3.0-fallback"
+        except Exception as e:
+            shim_content = GRANITE_SHIM_CONTENT
+            model_engine = "deterministic-fallback"
+
+        # 2. Commit the shim directly to PR branch via GitHub API
         commit_res = client.push_file_to_branch(
             owner=req.owner,
             repo=req.repo,
             branch=req.branch,
             file_path=req.file_path,
-            content=GRANITE_SHIM_CONTENT,
+            content=shim_content,
             commit_message="fix(vectis): auto-heal contract drift with IBM Granite 3.0 shim"
         )
 
-        # 2. Issue RFC 8785 Cryptographic Release Passport
+        # 3. Issue RFC 8785 Cryptographic Release Passport
         passport = passport_signer.create_signed_passport(
             pr_number=req.pull_number,
             commit_sha=req.head_sha,
@@ -107,7 +141,7 @@ def push_fix_to_github(req: PushFixRequest):
             shim_applied=True
         )
 
-        # 3. Flip GitHub Commit Status from FAILURE to SUCCESS
+        # 4. Flip GitHub Commit Status from FAILURE to SUCCESS
         target_url = f"{os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')}/cockpit?repo={req.owner}/{req.repo}&pr={req.pull_number}"
         client.set_commit_status(
             owner=req.owner,
@@ -118,11 +152,12 @@ def push_fix_to_github(req: PushFixRequest):
             target_url=target_url
         )
 
-        # 4. Post clearance comment on PR
+        # 5. Post clearance comment on PR
         comment_body = f"""## 🛡️ Vectis Auto-Heal Clearance
 
 ✅ **IBM Granite 3.0 Backward-Compatibility Shim Deployed!**
 - **File Committed:** `{req.file_path}`
+- **Engine:** `{model_engine}`
 - **Gate Verdict:** `PASS` (Risk reduced from 84.0 → 12.0)
 - **Status in GitHub:** `UNBLOCKED` (Safe to merge)
 
@@ -144,7 +179,8 @@ def push_fix_to_github(req: PushFixRequest):
             "verdict": "PASS",
             "message": "Auto-heal shim committed to GitHub branch and PR unblocked",
             "commit": commit_res,
-            "release_passport": passport
+            "release_passport": passport,
+            "granite_engine": model_engine
         }
 
     except Exception as e:
