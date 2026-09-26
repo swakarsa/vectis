@@ -715,12 +715,9 @@ export default function VectisCockpitPage() {
                 </select>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-emerald-400 font-mono bg-[#14151a] border border-white/[0.08] rounded-[3px] px-2 py-0.5 text-xs flex items-center gap-1">
+                  <span className="text-emerald-400 bg-[#14151a] border border-white/[0.08] rounded-[3px] px-2 py-0.5 text-xs flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Live Branch: {headBranch || "main"}
-                  </span>
-                  <span className="text-[11px] text-zinc-500">
-                    (Active Monitor)
+                    branch: {headBranch || "main"}
                   </span>
                 </div>
               )}
