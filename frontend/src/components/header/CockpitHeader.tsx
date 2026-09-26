@@ -10,6 +10,7 @@ import {
   DownloadSimple,
   TerminalWindow,
   ArrowLeft,
+  Cpu,
 } from "@phosphor-icons/react";
 import { GitHubAuthButton } from "./GitHubAuthButton";
 
@@ -26,8 +27,8 @@ interface CockpitHeaderProps {
   activePR?: number | string;
   shimApplied?: boolean;
   onResetToBreaking?: () => void;
-  gatewayMode?: "demo" | "live";
-  onConfigureGateway?: () => void;
+  onApplyShim?: () => void;
+  shimLoading?: boolean;
   mobileView?: "canvas" | "panel";
   onToggleMobileView?: (view: "canvas" | "panel") => void;
 }
@@ -43,8 +44,8 @@ export function CockpitHeader({
   onModeChange,
   shimApplied,
   onResetToBreaking,
-  gatewayMode = "demo",
-  onConfigureGateway,
+  onApplyShim,
+  shimLoading = false,
   mobileView = "canvas",
   onToggleMobileView,
 }: CockpitHeaderProps) {
@@ -129,16 +130,6 @@ export function CockpitHeader({
           </button>
         </div>
 
-        {/* Gateway Status Badge */}
-        <button
-          onClick={onConfigureGateway}
-          className="hidden sm:flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-[3px] bg-white/[0.03] border border-white/[0.08] hover:border-white/20 transition-colors cursor-pointer"
-          title="Gateway Engine Status (Click to inspect or configure custom backend endpoint)"
-        >
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${gatewayMode === 'live' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-          <span className="text-zinc-400">{gatewayMode === 'live' ? 'Live API' : 'Demo Engine'}</span>
-        </button>
-
         {/* Mobile View Toggle */}
         <div className="flex lg:hidden items-center bg-[#131418] border border-white/[0.08] rounded-[3px] p-0.5 text-[10px]">
           <button
@@ -174,20 +165,53 @@ export function CockpitHeader({
         )}
       </div>
 
-      {/* Right: Actions - Fixed 2 elements (Never expands or bloats) */}
+      {/* Right: Actions - Fixed 2 elements */}
       <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
         <GitHubAuthButton />
 
-        {/* Dynamic Single-Slot Primary Action */}
-        {mode === "benchmark" && shimApplied && onResetToBreaking ? (
-          <button
-            onClick={onResetToBreaking}
-            className="h-7 px-2.5 rounded-[3px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-            title="Re-inject breaking contract mutations to test the blocker again (Jury Simulation Sandbox)"
-          >
-            <ShieldWarning size={13} className="text-rose-400 shrink-0" />
-            <span>Re-inject Drift</span>
-          </button>
+        {/* Primary Action Button: Auto-Heal in Sandbox, Run Audit in Live Gate */}
+        {mode === "benchmark" ? (
+          !shimApplied ? (
+            <button
+              onClick={onApplyShim}
+              disabled={shimLoading}
+              className="h-7 px-3 rounded-[3px] bg-white text-black hover:bg-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0 shadow-sm"
+              title="Auto-Heal PR with IBM Granite 3.0"
+            >
+              {shimLoading ? (
+                <>
+                  <ArrowsClockwise size={13} className="animate-spin shrink-0" />
+                  <span>Synthesizing Shim...</span>
+                </>
+              ) : (
+                <>
+                  <Cpu size={14} weight="bold" className="shrink-0" />
+                  <span>Auto-Heal PR with Granite 3.0</span>
+                </>
+              )}
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={onDownloadPassport}
+                className="h-7 px-2.5 rounded-[3px] bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                title="Download Cryptographic Release Passport (RFC 8785)"
+              >
+                <DownloadSimple size={13} weight="bold" className="shrink-0" />
+                <span>Release Passport</span>
+              </button>
+              {onResetToBreaking && (
+                <button
+                  onClick={onResetToBreaking}
+                  className="h-7 px-2 rounded-[3px] bg-white/[0.06] hover:bg-white/[0.12] text-zinc-400 hover:text-white text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                  title="Reset Demo to Breaking State"
+                >
+                  <ArrowsClockwise size={12} className="shrink-0" />
+                  <span>Reset</span>
+                </button>
+              )}
+            </div>
+          )
         ) : (
           <button
             onClick={onAnalyze}
@@ -197,11 +221,11 @@ export function CockpitHeader({
             {loading ? (
               <>
                 <ArrowsClockwise size={12} className="animate-spin shrink-0" />
-                <span>Analyzing AST...</span>
+                <span>Auditing...</span>
               </>
             ) : (
               <>
-                <TerminalWindow size={12} weight="bold" shrink-0 />
+                <TerminalWindow size={12} weight="bold" className="shrink-0" />
                 <span>Run Gate Audit</span>
               </>
             )}

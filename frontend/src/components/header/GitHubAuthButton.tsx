@@ -11,6 +11,7 @@ import {
   X,
   ArrowRight,
   Info,
+  WarningCircle,
 } from "@phosphor-icons/react";
 import { GitHubUser } from "@/lib/github";
 
@@ -209,8 +210,8 @@ export const GitHubAuthButton: React.FC = () => {
                   </button>
                 </div>
                 {errorMsg && (
-                  <div className="text-[11px] text-rose-400 flex items-center gap-1">
-                    <span>⚠</span>
+                  <div className="text-[11px] text-rose-400 flex items-center gap-1.5">
+                    <WarningCircle size={13} weight="fill" className="shrink-0" />
                     <span>{errorMsg}</span>
                   </div>
                 )}
