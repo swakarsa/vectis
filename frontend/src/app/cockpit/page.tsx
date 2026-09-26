@@ -583,10 +583,16 @@ export default function VectisCockpitPage() {
         onResetToBreaking={handleResetToBreaking}
       />
 
-      {/* Sleek Sub-Header Bar (Live GitHub Mode only) */}
+      {/* Sleek Sub-Header Bar (Swakarsa Live Defender Mode only) */}
       {mode === "live_github" && (
         <div className="h-10 border-b border-white/[0.08] bg-[#0c0d10] px-5 flex items-center justify-between z-10 text-xs shrink-0 select-none">
           <div className="flex items-center gap-3">
+            <span className="px-1.5 py-0.5 rounded-[2px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-[10px] font-semibold tracking-wider font-mono shrink-0">
+              SWAKARSA DEFENDER
+            </span>
+
+            <div className="h-3 w-[1px] bg-white/[0.08]" />
+
             {/* Repo Dropdown */}
             <div className="flex items-center gap-1.5 text-zinc-400">
               <span className="text-zinc-500 font-medium shrink-0">Repo:</span>

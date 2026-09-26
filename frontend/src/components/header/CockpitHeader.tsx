@@ -103,8 +103,9 @@ export function CockpitHeader({
                 ? "bg-zinc-800 text-white shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
+            title="Interactive Jury Simulation Sandbox (Pre-configured PR #482 OIDC contract drift)"
           >
-            PR #482 Benchmark
+            Jury Simulation Sandbox
           </button>
           <button
             onClick={() => onModeChange?.("live_github")}
@@ -113,9 +114,10 @@ export function CockpitHeader({
                 ? "bg-zinc-800 text-emerald-300 shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
+            title="Swakarsa Live Defender (Direct real-time GitHub Bot connected to your repositories)"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            Live GitHub Defender
+            Swakarsa Live Defender
           </button>
         </div>
       </div>
