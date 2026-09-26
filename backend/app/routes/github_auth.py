@@ -12,16 +12,53 @@ GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
 
+from pydantic import BaseModel
+
+class TokenAuthRequest(BaseModel):
+    token: str
+
 @router.get("/auth/github/login")
 def github_login(redirect_uri: Optional[str] = None):
     """Initiates GitHub OAuth flow."""
+    if not GITHUB_CLIENT_ID:
+        return {
+            "configured": False,
+            "url": None,
+            "message": "GITHUB_CLIENT_ID is not configured in backend environment."
+        }
     params = {
         "client_id": GITHUB_CLIENT_ID,
         "scope": "repo,read:user,user:email",
         "redirect_uri": redirect_uri or f"{FRONTEND_BASE_URL}/api/auth/github/callback",
     }
     url = f"https://github.com/login/oauth/authorize?{urllib.parse.urlencode(params)}"
-    return {"url": url}
+    return {"configured": True, "url": url}
+
+@router.post("/auth/github/token")
+def authenticate_pat(req: TokenAuthRequest):
+    """Validates a GitHub Personal Access Token and returns verified user profile."""
+    headers = {
+        "Authorization": f"Bearer {req.token.strip()}",
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "Vectis-Sentinel"
+    }
+    try:
+        user_req = urllib.request.Request("https://api.github.com/user", headers=headers)
+        with urllib.request.urlopen(user_req, timeout=10) as resp:
+            user_data = json.loads(resp.read().decode("utf-8"))
+        return {
+            "status": "success",
+            "user": {
+                "id": user_data.get("id"),
+                "login": user_data.get("login"),
+                "name": user_data.get("name"),
+                "avatar_url": user_data.get("avatar_url"),
+                "html_url": user_data.get("html_url")
+            },
+            "token": req.token.strip()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid GitHub Token: {str(e)}")
 
 @router.get("/auth/github/callback")
 def github_callback(code: str = Query(...)):
