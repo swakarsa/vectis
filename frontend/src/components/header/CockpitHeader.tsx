@@ -24,6 +24,8 @@ interface CockpitHeaderProps {
   onModeChange?: (mode: "benchmark" | "live_github") => void;
   activeRepo?: string;
   activePR?: number | string;
+  shimApplied?: boolean;
+  onResetToBreaking?: () => void;
 }
 
 export function CockpitHeader({
@@ -35,6 +37,8 @@ export function CockpitHeader({
   passportAvailable,
   mode = "benchmark",
   onModeChange,
+  shimApplied,
+  onResetToBreaking,
 }: CockpitHeaderProps) {
   let statusDot = "bg-zinc-500";
   let statusLabel = "Awaiting PR Analysis";
@@ -128,6 +132,17 @@ export function CockpitHeader({
       <div className="flex items-center gap-2.5">
         <GitHubAuthButton />
 
+        {shimApplied && onResetToBreaking && (
+          <button
+            onClick={onResetToBreaking}
+            className="h-8 px-2.5 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-medium text-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="Re-inject breaking contract mutations to test the blocker again"
+          >
+            <ShieldWarning size={13} className="text-rose-400" />
+            <span>Re-inject Drift</span>
+          </button>
+        )}
+
         {passportAvailable && (
           <button
             onClick={onDownloadPassport}
@@ -151,7 +166,7 @@ export function CockpitHeader({
           ) : (
             <>
               <TerminalWindow size={13} weight="bold" />
-              <span>Run Gate Audit</span>
+              <span>{shimApplied ? "Re-Audit Healed PR" : "Run Gate Audit"}</span>
             </>
           )}
         </button>
