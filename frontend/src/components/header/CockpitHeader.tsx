@@ -203,11 +203,11 @@ export function CockpitHeader({
               {onResetToBreaking && (
                 <button
                   onClick={onResetToBreaking}
-                  className="h-7 px-2 rounded-[3px] bg-white/[0.06] hover:bg-white/[0.12] text-zinc-400 hover:text-white text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
-                  title="Reset Demo to Breaking State"
+                  className="h-7 px-2.5 rounded-[3px] border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                  title="Inject breaking contract mutations to simulate an unsafe, dangerous release"
                 >
-                  <ArrowsClockwise size={12} className="shrink-0" />
-                  <span>Reset</span>
+                  <ShieldWarning size={13} weight="bold" className="text-rose-400 shrink-0" />
+                  <span>Inject Breaking Drift</span>
                 </button>
               )}
             </div>
