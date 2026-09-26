@@ -55,7 +55,7 @@ export function CockpitHeader({
   }
 
   return (
-    <header className="h-14 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-5 flex items-center justify-between z-20 select-none">
+    <header className="h-14 shrink-0 border-b border-white/[0.08] bg-[#090a0d]/95 backdrop-blur-md px-5 flex items-center justify-between z-20 select-none">
       {/* Left: Branding & Mode Switcher */}
       <div className="flex items-center gap-3">
         <Link
