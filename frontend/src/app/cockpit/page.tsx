@@ -11,6 +11,7 @@ import {
   useNodesState,
   useEdgesState,
   BackgroundVariant,
+  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -200,6 +201,12 @@ export default function VectisCockpitPage() {
         target: e.target,
         animated: false,
         style: { stroke: "#3f3f46", strokeWidth: 1.5 },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: "#52525b",
+          width: 14,
+          height: 14,
+        },
       }));
 
       setNodes(flowNodes);
@@ -239,16 +246,33 @@ export default function VectisCockpitPage() {
         };
         setupArchitectureNodes(arch, benchmarkStateMap);
 
-        const hazardSources = new Set(["auth/session.ts", "payments/checkout.ts"]);
+        const dynamicHazards = new Set<string>();
+        BENCHMARK_BREAKING_CHANGES.forEach((b) => {
+          if (b.file_path) dynamicHazards.add(b.file_path.replace(/^src\//, ""));
+        });
+        BENCHMARK_DOWNSTREAM_IMPACT.forEach((d) => {
+          if (d.file_path) dynamicHazards.add(d.file_path.replace(/^src\//, ""));
+        });
+        if (dynamicHazards.size === 0) {
+          dynamicHazards.add("auth/session.ts");
+          dynamicHazards.add("payments/checkout.ts");
+        }
+
         setEdges((currentEdges) =>
           currentEdges.map((edge) => {
-            const isHazard = hazardSources.has(edge.source);
+            const isHazard = dynamicHazards.has(edge.source) || dynamicHazards.has(edge.target);
             return {
               ...edge,
               animated: isHazard,
               style: {
                 stroke: isHazard ? "#ef4444" : "#3f3f46",
                 strokeWidth: isHazard ? 2 : 1.5,
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: isHazard ? "#ef4444" : "#52525b",
+                width: 14,
+                height: 14,
               },
             };
           })
@@ -496,6 +520,12 @@ export default function VectisCockpitPage() {
               stroke: isHazard ? "#ef4444" : "#3f3f46",
               strokeWidth: isHazard ? 2 : 1.5,
             },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: isHazard ? "#ef4444" : "#52525b",
+              width: 14,
+              height: 14,
+            },
           };
         })
       );
@@ -544,6 +574,12 @@ export default function VectisCockpitPage() {
           style: {
             stroke: isHazard ? "#ef4444" : "#3f3f46",
             strokeWidth: isHazard ? 2 : 1.5,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: isHazard ? "#ef4444" : "#52525b",
+            width: 14,
+            height: 14,
           },
         };
       })
@@ -672,6 +708,12 @@ export default function VectisCockpitPage() {
             style: {
               stroke: wasHazard ? "#10b981" : "#3f3f46",
               strokeWidth: wasHazard ? 2 : 1.5,
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: wasHazard ? "#10b981" : "#52525b",
+              width: 14,
+              height: 14,
             },
           };
         })
@@ -937,8 +979,25 @@ export default function VectisCockpitPage() {
                   />
                   <button
                     onClick={() => {
-                      if (customRepoInput.trim()) {
-                        setRepoName(customRepoInput.trim());
+                      const trimmed = customRepoInput.trim();
+                      if (trimmed) {
+                        setRepoName(trimmed);
+                        setUserRepos((prev) => {
+                          if (!prev.some((r) => r.fullName === trimmed)) {
+                            return [
+                              {
+                                id: trimmed,
+                                name: trimmed.split("/")[1] || trimmed,
+                                fullName: trimmed,
+                                isBenchmark: false,
+                                branch: "main",
+                                description: "Custom repository",
+                              },
+                              ...prev,
+                            ];
+                          }
+                          return prev;
+                        });
                         setShimApplied(false);
                         setReleasePassport(null);
                         setPushedToPR(false);
@@ -1075,7 +1134,7 @@ export default function VectisCockpitPage() {
                 border: "1px solid rgba(255, 255, 255, 0.08)",
                 borderRadius: "4px",
               }}
-              className="!bottom-4 !right-4"
+              className="!bottom-4 !right-4 hidden md:block"
             />
           </ReactFlow>
         </div>

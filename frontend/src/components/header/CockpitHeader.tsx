@@ -153,16 +153,6 @@ export function CockpitHeader({
         <span className={`font-semibold tracking-tight whitespace-nowrap ${statusTextColor}`}>
           {statusLabel}
         </span>
-        {passportAvailable && (
-          <button
-            onClick={onDownloadPassport}
-            className="ml-1 text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-            title="Download Cryptographic Release Passport"
-          >
-            <DownloadSimple size={12} weight="bold" />
-            <span className="underline underline-offset-2">Passport</span>
-          </button>
-        )}
       </div>
 
       {/* Right: Actions - Fixed 2 elements */}
