@@ -54,10 +54,10 @@ Developer pushes PR #482 ──> TypeScript Compiler (tsc) PASSES (only typechec
 Vectis Sentinel operates as an autonomous, pre-merge gatekeeper sitting directly between GitHub Pull Requests and deployment pipelines:
 
 1. **Deterministic AST Diffing (1.2ms, 0.0% Hallucination):** Analyzes contract mutations across the repository using Python-native AST parsing and NetworkX Directed Acyclic Graph (DAG) traversal.
-2. **Multi-Hop Blast Radius Scoring:** Computes exact downstream impact based on dependency depth, service criticality, and production traffic weight.
+2. **Multi-Hop Blast Radius Scoring:** Computes exact downstream impact based on dependency depth, service criticality, and production traffic weight with continuous asymptotic saturation ($\tau = 55.0$).
 3. **PCI-DSS v4.0.1 Compliance Engine:** Scans pull request diffs for payment card data exposure (Req 3.4.2), hardcoded credentials (Req 8.2.8), and audit identity continuity (Req 10.2.1).
-4. **Autonomous Granite 3.0 Auto-Heal:** Generates zero-runtime-overhead ES6 Proxy shims via **IBM Granite 3.0 8B Instruct on watsonx.ai**, transparently bridging old signatures with new contracts without requiring callers to rewrite their code.
-5. **Cryptographic Release Passport:** Issues RFC 8785 canonical JSON attestations signed with HMAC-SHA256, mathematically proving release integrity before merge.
+4. **Autonomous Granite 3.0 Auto-Heal (Two-Tier Remediation):** Generates 14-day ephemeral ES6 Proxy shims and permanent clean codemod PRs via **IBM Granite 3.0 8B Instruct on watsonx.ai**, transparently bridging old signatures with new contracts without requiring callers to rewrite their code.
+5. **Cryptographic Release Passport:** Issues RFC 8785 canonical JSON attestations signed with Ed25519 & HMAC-SHA256 dual-control signatures, mathematically proving release integrity before merge.
 6. **OASIS SARIF v2.1.0 Exporter:** Natively uploads security and breaking change alerts into GitHub Code Scanning (Security Tab).
 
 ---
@@ -121,27 +121,34 @@ Vectis Sentinel includes a reproduction of a critical financial monorepo drift:
 ## 🛠️ The 4 Core Pillars
 
 ### 1. Deterministic AST & Graph Crawler
-* Ultra-fast symbol extraction without full TypeScript compiler bootstrapping.
-* Traverses deep monorepo dependency chains using Tarjan strongly connected components and NetworkX DAG algorithms.
-* Depth decay formula: $\text{Impact} = \text{Depth}^{-0.5} \times \text{Criticality} \times \text{TrafficWeight}$.
+* Ultra-fast symbol extraction without full TypeScript compiler bootstrapping; supports TypeScript (interfaces, types, union narrowing) and Python Pydantic (`BaseModel`, `TypedDict`).
+* Traverses deep monorepo dependency chains using NetworkX DAG algorithms with request-scoped graph isolation and $O(V+E)$ iterative DFS cycle resolution.
+* Continuous asymptotic saturation scoring ($\tau = 55.0$) eliminating 100-point ceiling saturation:
+  $$\text{TotalScore} = 100.0 \times \left(1 - \exp\left(-\frac{\text{RawTotalRisk}}{\tau}\right)\right)$$
+  where $\text{RawTotalRisk} = (\text{BlastDepthScore} \times \text{DensityMultiplier}) + \text{CritScore} + \text{CompliancePenalty}$ with inverse square root depth decay ($\text{Depth}^{-0.5}$) and graph blast density scaling.
+* Anti-Prompt-Injection Defense (CWE-94): Deterministic scanning of commit messages and diff comments, instantly hard-blocking risk to 100.0 on adversarial injection attempts.
 
 ### 2. IBM Granite 3.0 & watsonx.ai Auto-Heal
-* Powered by `ibm/granite-3-8b-instruct` deployed on IBM Cloud watsonx.ai.
-* Uses formal ChatML prompt engineering with zero runtime overhead constraints.
-* Generates 5 essential ES6 Proxy traps: `get`, `set` (two-way state bridge), `ownKeys`, `getOwnPropertyDescriptor`, and `has`.
-* Built-in 3-state Circuit Breaker (`CLOSED`, `OPEN`, `HALF_OPEN`) with exponential backoff and offline deterministic synthesis fallback.
+* Powered by `ibm/granite-3-8b-instruct` deployed on IBM Cloud watsonx.ai with offline deterministic synthesis fallback.
+* Uses formal ChatML prompt engineering with zero runtime overhead constraints and a 3-state Circuit Breaker (`CLOSED`, `OPEN`, `HALF_OPEN`).
+* **Two-Tier Remediation Architecture**:
+  * **Layer 1 (14-Day Ephemeral Defensive Proxy Membrane):** Immediate runtime ES6 Proxy adapter implementing 4 robust traps: `get`, `ownKeys` (with `Set` deduplication preventing ORM/Kafka key duplication), `getOwnPropertyDescriptor` (`enumerable: true`), and `toJSON()`. Features an automatic 14-day TTL expiry warning to eliminate permanent technical debt.
+  * **Layer 2 (Clean AST Codemod PR Generator):** Method `synthesize_codemod_diff` produces git-applyable unified diffs (`.patch`) to permanently modernize downstream call sites without proxy runtime overhead.
 
 ### 3. PCI-DSS v4.0.1 Compliance Engine & SARIF Exporter
-* Inspects pull request diffs for strict financial regulations:
-  * **Req 10.2.1:** User identification audit trails (verifies identity continuity shims).
+* Inspects pull request diffs for strict financial regulations and security standards:
+  * **Req 10.2.1:** User identification audit trails (verifies identity continuity shims via `toJSON` / Proxy traps).
   * **Req 3.4.2:** Prohibits raw Primary Account Number (PAN) storage and post-authorization CVV retention.
   * **Req 8.2.8:** Prohibits hardcoded API secrets and private keys.
+  * **Req 6.2.4 & SOC2 CC6.1:** Software security against CWE-94 injection surfaces and tenant data protection.
+* **Isolated Per-File Diff Auditing:** Eliminates cross-file diff pollution and test fixture false positives across multi-file pull requests.
 * Full OASIS SARIF v2.1.0 compliance with `security-severity`, CWE mappings, and GitHub Code Scanning alerts.
 
 ### 4. Cryptographic Release Passport
-* Mathematically immutable release receipt based on **RFC 8785 Canonical JSON**.
-* Includes full audit attestation (evaluated nodes, breaking mutations, compliance pass status, and SHA-256 graph digest).
-* Signed using HMAC-SHA256 (`passport_hash`), verifiable offline by CI/CD gates before production container builds.
+* Mathematically immutable release receipt based on **RFC 8785 Canonical JSON (JCS)**.
+* **Dual-Control Governance:** State machine transitions (`PENDING_REVIEW` -> `APPROVED`) requiring human-in-the-loop authorization (`POST /api/passport/dual-control-sign`).
+* Asymmetric **Ed25519 & HMAC-SHA256** signatures (`passport_hash`), verifiable offline by CI/CD gates before production container builds.
+* Satisfies PCI-DSS v4.0.1 Req 10.5.1 audit log tamper resistance.
 
 ---
 
@@ -214,7 +221,11 @@ docker-compose up --build
 Vectis provides a deterministic command-line interface for CI/CD runners:
 
 ```bash
+# Install Git pre-push release safety gate hook:
+python -m app.cli hook install
+
 # Python CLI runner (CI/CD pipeline & local git hooks):
+python -m app.cli audit --repo .
 python -m app.cli audit --repo . --diff main...HEAD
 python -m app.cli audit --repo . --sarif vectis-compliance.sarif
 python -m app.cli passport verify --file release-passport.json
@@ -230,8 +241,8 @@ npx vectis-gate verify --file release-passport.json
 
 The Vectis UI was crafted following strict enterprise developer tool standards:
 1. **Universal Non-Monospace:** Zero `font-mono`. Proportional sans-serif typography everywhere with tabular numerals (`tabular-nums font-sans`) for metrics.
-2. **Zero-Pill Geometry:** Sharp 2–4px corner radii (`rounded-[2px]` chips, `rounded-[4px]` buttons). Zero pill-shaped buttons.
-3. **Zero Em-Dash:** Zero em-dashes (`—`). All phrasing uses crisp colons (`:`), hyphens (`-`), or interpuncts (`·`).
+2. **Zero-Pill Geometry:** Sharp 2-4px corner radii (`rounded-[4px]` buttons/inputs/tags, `rounded-[6px]` cards/nodes, `rounded-none` gauges). Zero pill-shaped buttons.
+3. **Zero Em-Dash & Zero En-Dash:** Zero em-dashes (`—`) or en-dashes (`–`). All phrasing uses crisp colons (`:`), hyphens (`-`), or interpuncts (`·`).
 4. **100% Phosphor Icons:** Zero Lucide dependencies, zero raw emojis. Consistent iconography via `@phosphor-icons/react`.
 5. **Dark Void Palette:** True void surface (`#08090a` to `#14151a`) paired strictly with tri-color functional semantics: Hazard Red (`#ef4444`), Downstream Amber (`#f97316`), and Clear Emerald (`#10b981`).
 
@@ -241,5 +252,5 @@ The Vectis UI was crafted following strict enterprise developer tool standards:
 
 * **Team Name:** **swakarsa**
 * **Project Name:** **Vectis Sentinel**
-* **Hackathon:** IBM Bob 2.0 Hackathon (September 25–27, 2026) on [lablab.ai](https://lablab.ai/event/ibm-bob-2-hackathon)
-* **License:** Apache-2.0
+* **Hackathon:** IBM Bob 2.0 Hackathon (September 25-27, 2026) on [lablab.ai](https://lablab.ai/event/ibm-bob-2-hackathon)
+* **License:** MIT
