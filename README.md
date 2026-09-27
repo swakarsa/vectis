@@ -197,7 +197,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ### 2. Setup Cockpit Console (Terminal 2)
 ```bash
-# Dari root direktori vectis:
+# From repository root:
 cd console
 
 # Install dependencies
@@ -206,7 +206,7 @@ npm install
 # Start development server
 npm run dev
 
-# Buka visual dashboard di browser:
+# Open visual cockpit canvas in browser:
 # http://localhost:3000/cockpit
 ```
 
