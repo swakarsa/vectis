@@ -7,9 +7,7 @@ import {
   SignOut,
   CheckCircle,
   Key,
-  ShieldCheck,
   X,
-  ArrowRight,
   Info,
   WarningCircle,
 } from "@phosphor-icons/react";
@@ -94,26 +92,12 @@ export const GitHubAuthButton: React.FC = () => {
       }
 
       // 3. If API returned non-OK or failed
-      setErrorMsg("Invalid GitHub Personal Access Token. Please check token permissions or use 1-Click Team Account.");
+      setErrorMsg("Invalid GitHub Personal Access Token. Please check token permissions.");
     } catch {
-      setErrorMsg("Could not verify token with GitHub API. Please check your network connection or use 1-Click Team Account.");
+      setErrorMsg("Could not verify token with GitHub API. Please check your network connection.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleInstantTeamConnect = () => {
-    const teamUser: GitHubUser = {
-      id: 9948201,
-      login: "vectis-evaluator",
-      name: "Sandbox Evaluator",
-      avatar_url: "/logo-white.png",
-      html_url: "https://github.com",
-    };
-    setUser(teamUser);
-    localStorage.setItem("vectis_github_user", JSON.stringify(teamUser));
-    localStorage.setItem("vectis_github_token", "vectis_team_demo_token");
-    setModalOpen(false);
   };
 
   const handleSignOut = () => {
@@ -187,31 +171,10 @@ export const GitHubAuthButton: React.FC = () => {
                 Connect your GitHub account to let VECTIS intercept your Pull Requests in real time, block breaking contract mutations, and push auto-heal shims.
               </p>
 
-              {/* Quick 1-Click Sandbox Connect */}
-              <div className="p-3 bg-[#14151b] border border-emerald-500/20 rounded-[4px] space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
-                    <ShieldCheck size={14} />
-                    <span>1-Click Sandbox Evaluator</span>
-                  </div>
-                  <span className="text-[10px] text-zinc-500 tabular-nums font-sans">demo</span>
-                </div>
-                <p className="text-[11px] text-zinc-400">
-                  Instant connection for evaluation with the benchmark PR #482 simulation environment.
-                </p>
-                <button
-                  onClick={handleInstantTeamConnect}
-                  className="w-full py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-medium rounded-[4px] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <span>Connect as @vectis-evaluator</span>
-                  <ArrowRight size={13} />
-                </button>
-              </div>
-
               {/* Manual Token Input */}
               <div className="space-y-2 pt-1">
                 <label className="block text-xs font-medium text-zinc-300">
-                  Or Connect with Personal Access Token (PAT):
+                  Connect with Personal Access Token (PAT):
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -235,6 +198,9 @@ export const GitHubAuthButton: React.FC = () => {
                     <span>{errorMsg}</span>
                   </div>
                 )}
+                <p className="text-[11px] text-zinc-500">
+                  Requires <code className="text-zinc-400">repo</code> and <code className="text-zinc-400">read:user</code> scopes. Your token remains strictly client-side in your browser.
+                </p>
               </div>
 
               {/* OAuth App Info */}
