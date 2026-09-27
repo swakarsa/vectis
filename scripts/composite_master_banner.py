@@ -109,18 +109,18 @@ def create_master_banner():
     cards_data = [
         {
             "tag": "TIER 1 · LOCAL",
-            "title": "AST Blast DAG",
-            "sub": "<1.5s BFS · 0% Hallucination"
+            "title": "1.2ms AST Engine",
+            "sub": "< 2ms BFS · 0% Hallucination"
         },
         {
-            "tag": "TIER 2 · BOB 2.0",
+            "tag": "TIER 2 · IBM BOB 2.0",
             "title": "IBM Granite 3.0",
-            "sub": "FastMCP Auto-Heal Shim"
+            "sub": "FastMCP · Proxy & Codemod PR"
         },
         {
             "tag": "VERIFIED GATE",
             "title": "Release Passport",
-            "sub": "RFC 8785 · Zero $M Outages"
+            "sub": "RFC 8785 · Ed25519 Signed"
         }
     ]
     
@@ -150,7 +150,12 @@ def create_master_banner():
         
         # Subtitle / metric (12pt regular - generous margins)
         patch_draw.text((cx + 18, card_y + 70), c["sub"], fill=(145, 153, 168, 255), font=font_card_sub)
-    
+
+    # --- REGION 2: Bottom Left Status (Invariant 3 Compliance - Replace em-dash with pipe) ---
+    patch_draw.rectangle([90, 948, 450, 980], fill=(8, 9, 10, 255))
+    font_footer = ImageFont.truetype("C:/Windows/Fonts/segoeui.ttf", 10)
+    patch_draw.text((97, 960), "V / 01   |   RELEASE INTELLIGENCE ACTIVE", fill=(85, 92, 102, 255), font=font_footer)
+
     # 4. Helper functions for 3D cards
     def load_card_with_clean_alpha(path, bg_cut=16, feather_ramp=55):
         img = Image.open(path).convert("RGBA")
@@ -232,11 +237,33 @@ def create_master_banner():
     vignette = vignette.filter(ImageFilter.GaussianBlur(25))
     canvas = Image.alpha_composite(canvas, vignette)
     
-    # Save final master banner
-    out_path = "d:/vectis/assets/VECTIS_OFFICIAL_16x9_HERO_BANNER.png"
-    canvas.convert("RGB").save(out_path, quality=99)
-    canvas.convert("RGB").save("d:/vectis/frontend/public/vectis-hero-banner-16x9.png", quality=99)
-    print("SUCCESS: Master Banner updated at", out_path)
+    # Save final master banner to all production paths
+    rgb_banner = canvas.convert("RGB")
+    save_targets = [
+        "d:/vectis/assets/VECTIS_OFFICIAL_16x9_HERO_BANNER.png",
+        "d:/vectis/assets/vectis-final-master-banner-16x9.png",
+        "d:/vectis/assets/vectis-cover-banner.png",
+        "d:/vectis/assets/vectis-hero-banner-16x9.jpg",
+        "d:/vectis/assets/vectis-cover-banner-1920x1080.jpg",
+        "d:/vectis/frontend/public/vectis-hero-banner-16x9.png",
+        "d:/vectis/frontend/public/hero-banner.png",
+    ]
+    for target in save_targets:
+        if target.endswith(".jpg"):
+            rgb_banner.save(target, quality=95)
+        else:
+            rgb_banner.save(target, quality=99)
+        print("SUCCESS: Updated banner at", target)
+
+    # Scaled down derivatives for README & socials
+    readme_banner = canvas.resize((1024, 576), Image.Resampling.LANCZOS)
+    readme_banner.convert("RGB").save("d:/vectis/assets/vectis-readme-banner.png", quality=99)
+    print("SUCCESS: Updated README banner at d:/vectis/assets/vectis-readme-banner.png")
+    
+    banner_1200 = canvas.resize((1200, 675), Image.Resampling.LANCZOS)
+    banner_1200.convert("RGB").save("d:/vectis/assets/vectis-cover-banner-1200x675.jpg", quality=95)
+    banner_1200.convert("RGB").save("d:/vectis/assets/vectis-cover-banner.jpg", quality=95)
+    print("SUCCESS: Updated 1200x675 social banners")
 
 if __name__ == "__main__":
     create_master_banner()
