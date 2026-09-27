@@ -52,39 +52,8 @@ export const DEFAULT_REPOS: MonorepoOption[] = [
     branch: "main",
     description: "Autonomous Release Safety & Semantic Blast-Radius Intelligence",
   },
-  {
-    id: "swakarsa/catering-type-a",
-    name: "catering-type-a",
-    fullName: "swakarsa/catering-type-a",
-    isBenchmark: false,
-    branch: "main",
-    description: "Enterprise catering and order orchestration service",
-  },
-  {
-    id: "swakarsa/bob-hackathon-2026",
-    name: "bob-hackathon-2026",
-    fullName: "swakarsa/bob-hackathon-2026",
-    isBenchmark: false,
-    branch: "main",
-    description: "IBM Bob 2.0 Hackathon submission repository",
-  },
-  {
-    id: "rafieSQL/fullstack-todo-app",
-    name: "fullstack-todo-app",
-    fullName: "rafieSQL/fullstack-todo-app",
-    isBenchmark: false,
-    branch: "main",
-    description: "Fullstack productivity & focus manager",
-  },
-  {
-    id: "rafieSQL/Zangyou",
-    name: "Zangyou",
-    fullName: "rafieSQL/Zangyou",
-    isBenchmark: false,
-    branch: "main",
-    description: "Work tracking and schedule optimizer",
-  },
 ];
+
 
 export interface ArchitectureNode {
   id: string;
@@ -148,73 +117,8 @@ export const REPO_ARCHITECTURES: Record<string, RepoArchitecture> = {
       { source: "console/src/lib/github.ts", target: "engine/app/main.py" },
     ],
   },
-  "swakarsa/catering-type-a": {
-    description: "Enterprise Catering & Kitchen Orchestration Service",
-    nodes: [
-      { id: "src/lib/auth.ts", label: "src/lib/auth.ts", service: "Admin RBAC Security Guard", criticality: 0.95, traffic: 0.9, x: 320, y: 40 },
-      { id: "src/app/admin/actions.ts", label: "src/app/admin/actions.ts", service: "Order Dispatcher Server Actions", criticality: 1.0, traffic: 1.0, x: 320, y: 200 },
-      { id: "src/lib/catering-api.ts", label: "src/lib/catering-api.ts", service: "Menu & Inventory Core", criticality: 0.85, traffic: 0.8, x: 140, y: 370 },
-      { id: "src/lib/settlement.ts", label: "src/lib/settlement.ts", service: "Payment & Settlement Engine", criticality: 0.95, traffic: 0.7, x: 140, y: 530 },
-      { id: "src/app/admin/dapur/page.tsx", label: "src/app/admin/dapur/page.tsx", service: "Kitchen Live Dispatch Queue", criticality: 0.9, traffic: 0.95, x: 500, y: 370 },
-      { id: "src/components/OrderCard.tsx", label: "src/components/OrderCard.tsx", service: "Order Lifecycle Card", criticality: 0.75, traffic: 0.9, x: 500, y: 530 },
-    ],
-    edges: [
-      { source: "src/lib/auth.ts", target: "src/app/admin/actions.ts" },
-      { source: "src/app/admin/actions.ts", target: "src/lib/catering-api.ts" },
-      { source: "src/lib/catering-api.ts", target: "src/lib/settlement.ts" },
-      { source: "src/app/admin/actions.ts", target: "src/app/admin/dapur/page.tsx" },
-      { source: "src/app/admin/dapur/page.tsx", target: "src/components/OrderCard.tsx" },
-    ],
-  },
-  "rafieSQL/fullstack-todo-app": {
-    description: "Fullstack Productivity & Focus Management Platform",
-    nodes: [
-      { id: "client/src/components/Auth.jsx", label: "client/src/components/Auth.jsx", service: "JWT Session & Auth Gate", criticality: 0.95, traffic: 0.9, x: 320, y: 40 },
-      { id: "client/src/App.jsx", label: "client/src/App.jsx", service: "Focus Dashboard Root", criticality: 1.0, traffic: 1.0, x: 320, y: 200 },
-      { id: "client/src/components/ChronosCalendar.jsx", label: "client/src/components/ChronosCalendar.jsx", service: "Chronos Calendar Engine", criticality: 0.85, traffic: 0.85, x: 140, y: 370 },
-      { id: "client/src/api.js", label: "client/src/api.js", service: "HTTP API Gateway Client", criticality: 0.9, traffic: 0.95, x: 500, y: 370 },
-      { id: "api/partner-voice.js", label: "api/partner-voice.js", service: "Voice Stream Protocol Relay", criticality: 0.75, traffic: 0.6, x: 320, y: 530 },
-      { id: "api/transcribe.js", label: "api/transcribe.js", service: "Audio Ingestion & Transcription", criticality: 0.7, traffic: 0.5, x: 320, y: 690 },
-    ],
-    edges: [
-      { source: "client/src/components/Auth.jsx", target: "client/src/App.jsx" },
-      { source: "client/src/App.jsx", target: "client/src/components/ChronosCalendar.jsx" },
-      { source: "client/src/App.jsx", target: "client/src/api.js" },
-      { source: "client/src/api.js", target: "api/partner-voice.js" },
-      { source: "api/partner-voice.js", target: "api/transcribe.js" },
-    ],
-  },
-  "rafieSQL/Zangyou": {
-    description: "Zangyou Work Tracking & Schedule Optimizer",
-    nodes: [
-      { id: "src/auth/auth_adapter.ts", label: "src/auth/auth_adapter.ts", service: "IBM Granite Auto-Healed Shim", criticality: 0.9, traffic: 0.8, x: 320, y: 40 },
-      { id: "src/App.tsx", label: "src/App.tsx", service: "Zangyou Dashboard Root", criticality: 1.0, traffic: 1.0, x: 320, y: 200 },
-      { id: "src/services/api.ts", label: "src/services/api.ts", service: "Overtime API Gateway Client", criticality: 0.85, traffic: 0.9, x: 160, y: 370 },
-      { id: "src/components/ShiftCalendar.tsx", label: "src/components/ShiftCalendar.tsx", service: "Shift Scheduler Core", criticality: 0.8, traffic: 0.75, x: 480, y: 370 },
-      { id: "src/components/OvertimeCalculator.tsx", label: "src/components/OvertimeCalculator.tsx", service: "Payroll Calculation Engine", criticality: 0.95, traffic: 0.7, x: 320, y: 530 },
-    ],
-    edges: [
-      { source: "src/auth/auth_adapter.ts", target: "src/App.tsx" },
-      { source: "src/App.tsx", target: "src/services/api.ts" },
-      { source: "src/App.tsx", target: "src/components/ShiftCalendar.tsx" },
-      { source: "src/services/api.ts", target: "src/components/OvertimeCalculator.tsx" },
-    ],
-  },
-  "swakarsa/bob-hackathon-2026": {
-    description: "IBM Bob 2.0 Hackathon Submission Platform",
-    nodes: [
-      { id: "engine/app/main.py", label: "engine/app/main.py", service: "Hackathon Backend Entry", criticality: 1.0, traffic: 1.0, x: 320, y: 40 },
-      { id: "engine/app/granite/client.py", label: "engine/app/granite/client.py", service: "IBM Bob 2.0 Granite Model", criticality: 0.95, traffic: 0.8, x: 160, y: 220 },
-      { id: "console/src/app/page.tsx", label: "console/src/app/page.tsx", service: "Live Demo Presentation", criticality: 0.9, traffic: 0.9, x: 480, y: 220 },
-      { id: "console/src/lib/api.ts", label: "console/src/lib/api.ts", service: "RPC Transport Layer", criticality: 0.85, traffic: 0.85, x: 320, y: 400 },
-    ],
-    edges: [
-      { source: "engine/app/main.py", target: "engine/app/granite/client.py" },
-      { source: "console/src/app/page.tsx", target: "console/src/lib/api.ts" },
-      { source: "console/src/lib/api.ts", target: "engine/app/main.py" },
-    ],
-  },
 };
+
 
 /**
  * Fetch architecture DAG for a given repository.
@@ -290,13 +194,13 @@ export async function fetchRepoArchitecture(repoFullName: string, token?: string
 export async function fetchUserRepos(token?: string, username?: string): Promise<MonorepoOption[]> {
   const repoMap = new Map<string, MonorepoOption>();
 
-  // Add default repos first
+  // Add default benchmark/project repos first
   DEFAULT_REPOS.forEach((r) => repoMap.set(r.fullName.toLowerCase(), r));
 
   const authToken = token || (typeof window !== "undefined" ? localStorage.getItem("vectis_github_token") : null);
 
-  // 1. Direct fetch from GitHub API with token
-  if (authToken) {
+  // 1. Direct fetch from GitHub API with token when user connects their account
+  if (authToken && authToken !== "vectis_team_demo_token") {
     try {
       const res = await fetch("https://api.github.com/user/repos?sort=updated&per_page=50&affiliation=owner,collaborator,organization_member", {
         headers: {
@@ -319,13 +223,13 @@ export async function fetchUserRepos(token?: string, username?: string): Promise
         });
       }
     } catch {
-      // Fallback
+      // Fallback to default options if network fails
     }
   }
 
-  // 2. Direct fetch from public GitHub API for user (e.g. rafieSQL)
+  // 2. Fetch public repos for authenticated user if login username is provided
   const targetUser = username || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("vectis_github_user") || "{}").login : null);
-  if (targetUser && targetUser !== "swakarsa") {
+  if (targetUser && authToken && authToken !== "vectis_team_demo_token") {
     try {
       const res = await fetch(`https://api.github.com/users/${targetUser}/repos?sort=updated&per_page=50`, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
