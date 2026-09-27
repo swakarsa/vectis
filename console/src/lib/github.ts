@@ -93,72 +93,285 @@ export const REPO_ARCHITECTURES: Record<string, RepoArchitecture> = {
 
 
 
+export function formatServiceLabel(path: string): string {
+  const parts = path.split("/");
+  const fileName = parts[parts.length - 1];
+  const dirName = parts.length > 1 ? parts[parts.length - 2] : "";
+
+  const cleanName = fileName.replace(/\.[^/.]+$/, "");
+  const formattedFile = cleanName
+    .split(/[_-]/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+
+  if (dirName && !["src", "app", "lib", "pkg"].includes(dirName.toLowerCase())) {
+    const formattedDir = dirName.charAt(0).toUpperCase() + dirName.slice(1);
+    return `${formattedDir} / ${formattedFile || fileName}`;
+  }
+
+  return formattedFile || fileName;
+}
+
 /**
  * Fetch architecture DAG for a given repository.
- * Matches known high-fidelity presets, or dynamically extracts real file tree from GitHub API.
+ * Matches benchmark simulation, or dynamically extracts real file tree from GitHub API.
+ * Never falls back to fintech-monorepo benchmark for connected user repos.
  */
-export async function fetchRepoArchitecture(repoFullName: string, token?: string): Promise<RepoArchitecture> {
-  const normKey = Object.keys(REPO_ARCHITECTURES).find(
-    (k) => k.toLowerCase() === repoFullName.toLowerCase()
-  );
-  if (normKey && REPO_ARCHITECTURES[normKey]) {
-    return REPO_ARCHITECTURES[normKey];
+export async function fetchRepoArchitecture(
+  repoFullName: string,
+  token?: string,
+  branch?: string
+): Promise<RepoArchitecture> {
+  // 1. Sandbox benchmark mode
+  if (repoFullName.toLowerCase() === "fintech-monorepo") {
+    return REPO_ARCHITECTURES["fintech-monorepo"];
   }
 
-  // Fallback for custom repos: Fetch GitHub tree
   const parts = repoFullName.split("/");
-  if (parts.length === 2) {
-    const [owner, repo] = parts;
-    const authToken = token || (typeof window !== "undefined" ? localStorage.getItem("vectis_github_token") : null);
-    try {
-      const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
-      if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+  if (parts.length !== 2) {
+    return {
+      description: `${repoFullName || "Repository"} architecture`,
+      nodes: [
+        {
+          id: repoFullName || "root",
+          label: repoFullName || "Repository",
+          service: "Repository",
+          criticality: 0.5,
+          traffic: 0.5,
+          x: 320,
+          y: 180,
+        },
+      ],
+      edges: [],
+    };
+  }
 
-      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        const codeFiles = (data.tree || [])
-          .filter((t: any) => t.type === "blob" && t.path.match(/\.(tsx?|jsx?|py|go|rs|java)$/))
-          .map((t: any) => t.path)
-          .slice(0, 7);
+  const [owner, repo] = parts;
+  const authToken = token || (typeof window !== "undefined" ? localStorage.getItem("vectis_github_token") : null);
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (authToken && authToken !== "vectis_team_demo_token") {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
 
-        if (codeFiles.length >= 3) {
-          const nodes: ArchitectureNode[] = codeFiles.map((path: string, i: number) => {
-            const isLeft = i % 2 === 0;
-            const row = Math.floor(i / 2);
-            return {
-              id: path,
-              label: path,
-              service: path.split("/").pop() || path,
-              criticality: Math.max(0.6, 1.0 - i * 0.08),
-              traffic: Math.max(0.5, 0.95 - i * 0.09),
-              x: isLeft ? 160 : 480,
-              y: 60 + row * 170,
-            };
-          });
-
-          const edges: ArchitectureEdge[] = [];
-          for (let i = 0; i < nodes.length - 1; i++) {
-            edges.push({ source: nodes[i].id, target: nodes[i + 1].id });
-          }
-          if (nodes.length > 3) {
-            edges.push({ source: nodes[0].id, target: nodes[2].id });
-          }
-
-          return {
-            description: `${repoFullName} dynamic tree architecture`,
-            nodes,
-            edges,
-          };
+  try {
+    // 2. Resolve default branch
+    let targetBranch = branch;
+    if (!targetBranch) {
+      try {
+        const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+        if (repoRes.ok) {
+          const repoData = await repoRes.json();
+          targetBranch = repoData.default_branch;
         }
+      } catch {
+        // Fallback
+      }
+    }
+    targetBranch = targetBranch || "main";
+
+    // 3. Fetch git tree recursively
+    let treeItems: any[] = [];
+    try {
+      let treeRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(targetBranch)}?recursive=1`,
+        { headers }
+      );
+      if (!treeRes.ok && targetBranch !== "master") {
+        treeRes = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`,
+          { headers }
+        );
+        if (treeRes.ok) targetBranch = "master";
+      }
+      if (treeRes.ok) {
+        const data = await treeRes.json();
+        treeItems = data.tree || [];
       }
     } catch {
-      // Fallback
+      // Ignore
     }
-  }
 
-  // Default fallback
-  return REPO_ARCHITECTURES["fintech-monorepo"];
+    // 4. Fallback to /contents if git/trees returned nothing
+    if (treeItems.length === 0) {
+      try {
+        const contentsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`, { headers });
+        if (contentsRes.ok) {
+          const contents = await contentsRes.json();
+          if (Array.isArray(contents)) {
+            treeItems = contents.map((c: any) => ({
+              path: c.path || c.name,
+              type: c.type === "dir" ? "tree" : "blob",
+            }));
+          }
+        }
+      } catch {
+        // Ignore
+      }
+    }
+
+    // 5. Filter repository blob files
+    const allBlobs: string[] = treeItems
+      .filter((t: any) => t.type === "blob")
+      .map((t: any) => t.path);
+
+    const isJunk = (p: string) =>
+      p.startsWith(".git/") ||
+      p.startsWith("node_modules/") ||
+      p.includes("/node_modules/") ||
+      p.endsWith("package-lock.json") ||
+      p.endsWith("yarn.lock") ||
+      p.endsWith("pnpm-lock.yaml") ||
+      p.endsWith(".min.js") ||
+      p.endsWith(".min.css") ||
+      p.endsWith(".map");
+
+    const cleanBlobs = allBlobs.filter((p) => !isJunk(p));
+
+    // Code & config file extensions
+    const codeRegex = /\.(tsx?|jsx?|py|go|rs|java|kt|swift|c|cpp|h|hpp|cs|php|rb|sql|sh|json|ya?ml|toml|proto|graphql|vue|svelte|html|css|md)$/i;
+
+    let selectedFiles = cleanBlobs.filter((p) => codeRegex.test(p));
+    if (selectedFiles.length === 0) {
+      selectedFiles = cleanBlobs;
+    }
+
+    // Sort to prioritize source code directories
+    selectedFiles.sort((a, b) => {
+      const aIsSrc = /^(src|app|lib|pkg|engine|api|core|server|client)\//i.test(a);
+      const bIsSrc = /^(src|app|lib|pkg|engine|api|core|server|client)\//i.test(b);
+      if (aIsSrc && !bIsSrc) return -1;
+      if (!aIsSrc && bIsSrc) return 1;
+      return a.localeCompare(b);
+    });
+
+    if (selectedFiles.length > 10) {
+      selectedFiles = selectedFiles.slice(0, 10);
+    }
+
+    // CASE 0: Empty repository
+    if (selectedFiles.length === 0) {
+      return {
+        description: `${repoFullName} (${targetBranch}) - Initialized repository`,
+        nodes: [
+          {
+            id: `${repo}/root`,
+            label: `${repoFullName} (${targetBranch})`,
+            service: "Repository Root (Empty)",
+            criticality: 0.1,
+            traffic: 0.1,
+            x: 320,
+            y: 180,
+          },
+        ],
+        edges: [],
+      };
+    }
+
+    // CASE 1: Single file repo (e.g. rafieSQL/Zangyou)
+    if (selectedFiles.length === 1) {
+      const filePath = selectedFiles[0];
+      return {
+        description: `${repoFullName} (${targetBranch}) dynamic module architecture`,
+        nodes: [
+          {
+            id: filePath,
+            label: filePath,
+            service: formatServiceLabel(filePath),
+            criticality: 1.0,
+            traffic: 0.9,
+            x: 320,
+            y: 180,
+          },
+        ],
+        edges: [],
+      };
+    }
+
+    // CASE 2: Two files
+    if (selectedFiles.length === 2) {
+      return {
+        description: `${repoFullName} (${targetBranch}) dynamic architecture`,
+        nodes: [
+          {
+            id: selectedFiles[0],
+            label: selectedFiles[0],
+            service: formatServiceLabel(selectedFiles[0]),
+            criticality: 1.0,
+            traffic: 0.9,
+            x: 200,
+            y: 180,
+          },
+          {
+            id: selectedFiles[1],
+            label: selectedFiles[1],
+            service: formatServiceLabel(selectedFiles[1]),
+            criticality: 0.85,
+            traffic: 0.7,
+            x: 480,
+            y: 180,
+          },
+        ],
+        edges: [{ source: selectedFiles[0], target: selectedFiles[1] }],
+      };
+    }
+
+    // CASE 3+: 3 to 10 files (Organize in clean multi-column top-down DAG)
+    const isThreeCol = selectedFiles.length > 4;
+    const colCount = isThreeCol ? 3 : 2;
+    const colX = isThreeCol ? [140, 420, 700] : [180, 520];
+
+    const nodes: ArchitectureNode[] = selectedFiles.map((path: string, i: number) => {
+      const col = i % colCount;
+      const row = Math.floor(i / colCount);
+      return {
+        id: path,
+        label: path,
+        service: formatServiceLabel(path),
+        criticality: Math.max(0.5, 1.0 - i * 0.06),
+        traffic: Math.max(0.4, 0.95 - i * 0.07),
+        x: colX[col],
+        y: 60 + row * 160,
+      };
+    });
+
+    const edges: ArchitectureEdge[] = [];
+    for (let i = 0; i < nodes.length - 1; i++) {
+      edges.push({ source: nodes[i].id, target: nodes[i + 1].id });
+    }
+    if (nodes.length > 3) {
+      edges.push({ source: nodes[0].id, target: nodes[2].id });
+    }
+    if (nodes.length > 5) {
+      edges.push({ source: nodes[1].id, target: nodes[4].id });
+    }
+
+    return {
+      description: `${repoFullName} (${targetBranch}) dynamic DAG architecture`,
+      nodes,
+      edges,
+    };
+  } catch (err) {
+    // Fail-safe: Render connected repository node, never fintech-monorepo!
+    return {
+      description: `${repoFullName} connected repository`,
+      nodes: [
+        {
+          id: repoFullName,
+          label: repoFullName,
+          service: "Repository Workspace",
+          criticality: 0.6,
+          traffic: 0.6,
+          x: 320,
+          y: 180,
+        },
+      ],
+      edges: [],
+    };
+  }
 }
 
 /**
@@ -262,25 +475,85 @@ export async function fetchRepoPullRequests(owner: string, repo: string, token?:
 }
 
 /**
- * Fetch latest commit SHA on a branch from GitHub
+ * Fetch latest commit SHA on a branch from GitHub.
+ * If branch is not specified or fails, automatically falls back to repository's default branch.
  */
-export async function fetchBranchCommitSha(owner: string, repo: string, branch: string, token?: string): Promise<string | null> {
+export async function fetchBranchCommitSha(
+  owner: string,
+  repo: string,
+  branch?: string,
+  token?: string
+): Promise<string | null> {
   const authToken = token || (typeof window !== "undefined" ? localStorage.getItem("vectis_github_token") : null);
-  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
-  if (authToken) {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (authToken && authToken !== "vectis_team_demo_token") {
     headers["Authorization"] = `Bearer ${authToken}`;
   }
 
+  // 1. Try branch commit if branch is specified
+  if (branch) {
+    try {
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${encodeURIComponent(branch)}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.sha) return data.sha;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  // 2. Fallback: get latest commit on repository default branch
   try {
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${branch}`, { headers });
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`, { headers });
     if (res.ok) {
       const data = await res.json();
-      return data.sha || null;
+      if (Array.isArray(data) && data.length > 0 && data[0].sha) {
+        return data[0].sha;
+      }
     }
   } catch {
     // Fallback
   }
+
   return null;
+}
+
+/**
+ * Fetch real changed files for a Pull Request from GitHub API
+ */
+export async function fetchPRChangedFiles(
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  token?: string
+): Promise<string[]> {
+  const authToken = token || (typeof window !== "undefined" ? localStorage.getItem("vectis_github_token") : null);
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (authToken && authToken !== "vectis_team_demo_token") {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+
+  try {
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/files?per_page=50`, {
+      headers,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        return data.map((f: any) => f.filename);
+      }
+    }
+  } catch {
+    // Fallback
+  }
+  return [];
 }
 
 /**
@@ -329,6 +602,7 @@ export async function pushAutoHealFix(params: {
   branch: string;
   headSha: string;
   token?: string;
+  filePath?: string;
 }) {
   const authToken = params.token || (typeof window !== "undefined" ? localStorage.getItem("vectis_github_token") : null);
 
@@ -375,11 +649,11 @@ export function createSessionUserAdapter(modernSession: any): any {
 }
 `;
 
-      const filePath = "src/auth/auth_adapter.ts";
+      const targetPath = params.filePath || "src/auth/auth_adapter.ts";
       let existingSha: string | undefined;
 
       try {
-        const getFileRes = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/contents/${filePath}?ref=${params.branch}`, {
+        const getFileRes = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/contents/${targetPath}?ref=${params.branch}`, {
           headers: { Authorization: `Bearer ${authToken}` },
         });
         if (getFileRes.ok) {
@@ -393,7 +667,7 @@ export function createSessionUserAdapter(modernSession: any): any {
       // Encode content to base64
       const b64Content = typeof window !== "undefined" ? btoa(unescape(encodeURIComponent(shimContent))) : "";
 
-      const putRes = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/contents/${filePath}`, {
+      const putRes = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/contents/${targetPath}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${authToken}`,
