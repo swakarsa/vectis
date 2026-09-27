@@ -632,22 +632,9 @@ else
     python -m app.cli audit
 fi
 AUDIT_EXIT=$?
-
-if [ $AUDIT_EXIT -ne 0 ]; then
-    echo ""
-    echo "[VECTIS] [BLOCKED] Pre-push release safety gate failed (risk >= 70.0)."
-    echo "[VECTIS] [ACTION] Review & auto-heal in Cockpit Console:"
-    echo "         Primary (Localhost): http://localhost:3000/cockpit"
-    echo "         Cloud Console:       https://vectis-sentinel.vercel.app/cockpit"
-    echo ""
-    exit 1
-fi
-
-echo "[VECTIS] [OK] Release safety audit passed. Proceeding with push."
-echo "[VECTIS] [CONSOLE] Cockpit Live View: http://localhost:3000/cockpit (Cloud: https://vectis-sentinel.vercel.app/cockpit)"
-echo ""
-exit 0
+exit $AUDIT_EXIT
 """
+
 
     try:
         with open(hook_file, "w", encoding="utf-8", newline="\n") as f:
