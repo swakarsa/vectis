@@ -564,6 +564,14 @@ def handle_audit(args: argparse.Namespace) -> int:
         print("  ES6 Proxy backward-compatibility shim. Run:")
         print(Term.cyan("    curl -X POST http://localhost:8000/api/auto-heal"))
         print("")
+    else:
+        local_pass_url = "http://localhost:3000/cockpit?verdict=PASS&repo=swakarsa/vectis"
+        cloud_pass_url = "https://vectis-sentinel.vercel.app/cockpit?verdict=PASS&repo=swakarsa/vectis"
+        print(Term.bold(Term.green("--- [✓] Release Gate Cleared: Clean Architecture Passport --------------------")))
+        print(" Everything is safe and verified. Inspect architecture & release passport:")
+        print(f"   {Term.bold('Primary (Localhost):')}  {Term.cyan(local_pass_url)}")
+        print(f"   {Term.bold('Cloud Console:')}        {Term.dim(cloud_pass_url)}")
+        print("")
 
     if sarif_output:
         print(Term.dim(f" SARIF report written to: {sarif_output}"))
@@ -629,13 +637,14 @@ if [ $AUDIT_EXIT -ne 0 ]; then
     echo ""
     echo "[VECTIS] ❌ PRE-PUSH BLOCKED: Release safety gate failed (risk >= 70.0)."
     echo "[VECTIS] 👉 Review & Auto-Heal in Cockpit Console:"
-    echo "         Cloud: https://vectis-sentinel.vercel.app/cockpit"
-    echo "         Local: http://localhost:3000/cockpit"
+    echo "         Primary (Localhost): http://localhost:3000/cockpit"
+    echo "         Cloud Console:       https://vectis-sentinel.vercel.app/cockpit"
     echo ""
     exit 1
 fi
 
 echo "[VECTIS] ✅ Release safety audit passed. Proceeding with push."
+echo "[VECTIS] 👉 Cockpit Live View: http://localhost:3000/cockpit (Cloud: https://vectis-sentinel.vercel.app/cockpit)"
 echo ""
 exit 0
 """

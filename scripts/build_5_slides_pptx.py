@@ -11,16 +11,19 @@ def build_simple_deck():
     prs.slide_height = Inches(7.5)
     blank_layout = prs.slide_layouts[6]
 
-    # Minimalist Dark Void Palette
-    BG_COLOR = RGBColor(8, 9, 10)           # #08090a
-    SURFACE_CARD = RGBColor(18, 19, 24)     # #121318
-    BORDER_COLOR = RGBColor(36, 38, 46)     # Clean subtle border
-    TEXT_PRIMARY = RGBColor(245, 245, 247)   # Crisp white
-    TEXT_SECONDARY = RGBColor(160, 160, 168) # Clean neutral
-    TEXT_MUTED = RGBColor(115, 115, 125)    # Subdued metadata
-    ACCENT_EMERALD = RGBColor(16, 185, 129) # #10b981 (Savings / Passports)
-    ACCENT_CRIMSON = RGBColor(239, 68, 68)  # #ef4444 (Outage / Loss / Bleeding)
-    ACCENT_AMBER = RGBColor(245, 158, 11)   # #f59e0b (Warning / Hazard)
+    # Master Banner Titanium Stealth Palette (Derived 1:1 from Slide 1)
+    BG_COLOR = RGBColor(8, 9, 10)           # #08090a (Deep Void)
+    SURFACE_CARD = RGBColor(15, 16, 20)     # #0f1014 (Calm Stealth Card)
+    BORDER_COLOR = RGBColor(34, 36, 44)     # #22242c (Thin 1px Subtle Slate)
+    
+    TEXT_TITLE = RGBColor(255, 255, 255)    # #ffffff (Pure White)
+    TEXT_PRIMARY = RGBColor(240, 240, 244)  # #f0f0f4 (Crisp Titanium)
+    TEXT_SECONDARY = RGBColor(160, 163, 175)# #a0a3af (Muted Silver)
+    TEXT_MUTED = RGBColor(110, 114, 126)    # #6e727e (Charcoal Slate)
+    TEXT_TAG = RGBColor(140, 144, 156)      # #8c909c (Uppercase Metadata Tag)
+
+    # SURGICAL ACCENT: Reserved ONLY for urgent financial bleeding
+    ACCENT_BLEED = RGBColor(239, 68, 68)    # #ef4444 (Crimson - Outage loss numbers only)
 
     def set_bg(slide):
         bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0), Inches(0), Inches(13.333), Inches(7.5))
@@ -41,7 +44,7 @@ def build_simple_deck():
         r1.font.name = "Segoe UI"
         r1.font.size = Pt(10)
         r1.font.bold = True
-        r1.font.color.rgb = TEXT_PRIMARY
+        r1.font.color.rgb = TEXT_TITLE
         
         r2 = p.add_run()
         r2.text = f"{category}  ·  IBM BOB 2.0 AI HACKATHON GRAND FINALE"
@@ -99,18 +102,18 @@ def build_simple_deck():
     p = tf2_h.paragraphs[0]
     
     r = p.add_run()
-    r.text = "THE GLOBAL MONOREPO OUTAGE CRISIS (THE HIDDEN BLEED)\n"
+    r.text = "THE GLOBAL MONOREPO OUTAGE CRISIS\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(10)
     r.font.bold = True
-    r.font.color.rgb = ACCENT_CRIMSON
+    r.font.color.rgb = TEXT_TAG
 
     r = p.add_run()
     r.text = "Syntax Passes. Tests Pass. Production Bleeds Millions.\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(28)
     r.font.bold = True
-    r.font.color.rgb = TEXT_PRIMARY
+    r.font.color.rgb = TEXT_TITLE
 
     p_lead = tf2_h.add_paragraph()
     p_lead.space_before = Pt(4)
@@ -120,23 +123,30 @@ def build_simple_deck():
     r.font.size = Pt(11.5)
     r.font.color.rgb = TEXT_SECONDARY
 
-    # 3 Balanced Columns on Slide 2
+    # 3 Balanced Columns on Slide 2 (All calm titanium cards)
     col_w = 3.65
     gap = 0.29
 
-    # Col 1: Catastrophic Precedents (Bleeding Red)
-    add_card(s2, 0.9, 2.7, col_w, 4.3, border=RGBColor(80, 25, 25))
+    # Col 1: Catastrophic Precedents (Numbers in Crimson Red)
+    add_card(s2, 0.9, 2.7, col_w, 4.3)
     t1 = s2.shapes.add_textbox(Inches(1.1), Inches(2.85), Inches(col_w - 0.4), Inches(4.0))
     tf1 = t1.text_frame
     tf1.word_wrap = True
     tf1.margin_left = tf1.margin_top = tf1.margin_right = tf1.margin_bottom = 0
     p = tf1.paragraphs[0]
+    r_tag = p.add_run()
+    r_tag.text = "MACRO INDUSTRY EVIDENCE\n"
+    r_tag.font.name = "Segoe UI"
+    r_tag.font.size = Pt(8.5)
+    r_tag.font.bold = True
+    r_tag.font.color.rgb = TEXT_TAG
+
     r = p.add_run()
     r.text = "1. Catastrophic Precedents\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(13)
     r.font.bold = True
-    r.font.color.rgb = ACCENT_CRIMSON
+    r.font.color.rgb = TEXT_TITLE
 
     c1_disasters = [
         ("$5.4 BILLION", "CrowdStrike (July 2024)", "8.5M systems downed by silent payload logic mismatch in routine release."),
@@ -146,13 +156,13 @@ def build_simple_deck():
     ]
     for num, lbl, desc in c1_disasters:
         pi = tf1.add_paragraph()
-        pi.space_before = Pt(7)
+        pi.space_before = Pt(6)
         rn = pi.add_run()
         rn.text = num + "  "
         rn.font.name = "Segoe UI"
         rn.font.size = Pt(13)
         rn.font.bold = True
-        rn.font.color.rgb = ACCENT_CRIMSON
+        rn.font.color.rgb = ACCENT_BLEED
         rl = pi.add_run()
         rl.text = lbl + "\n"
         rl.font.name = "Segoe UI"
@@ -166,18 +176,25 @@ def build_simple_deck():
         rd.font.color.rgb = TEXT_SECONDARY
 
     # Col 2: The Silent Midnight Crash (PR #482)
-    add_card(s2, 0.9 + col_w + gap, 2.7, col_w, 4.3, border=RGBColor(65, 45, 20))
+    add_card(s2, 0.9 + col_w + gap, 2.7, col_w, 4.3)
     t2 = s2.shapes.add_textbox(Inches(0.9 + col_w + gap + 0.2), Inches(2.85), Inches(col_w - 0.4), Inches(4.0))
     tf2 = t2.text_frame
     tf2.word_wrap = True
     tf2.margin_left = tf2.margin_top = tf2.margin_right = tf2.margin_bottom = 0
     p = tf2.paragraphs[0]
+    r_tag = p.add_run()
+    r_tag.text = "GROUNDED FAILURE ANATOMY\n"
+    r_tag.font.name = "Segoe UI"
+    r_tag.font.size = Pt(8.5)
+    r_tag.font.bold = True
+    r_tag.font.color.rgb = TEXT_TAG
+
     r = p.add_run()
     r.text = "2. The Midnight Crash (PR #482)\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(13)
     r.font.bold = True
-    r.font.color.rgb = ACCENT_AMBER
+    r.font.color.rgb = TEXT_TITLE
 
     c2_pts = [
         ("The Local Illusion: ", "Engineer refactors auth/session.ts to OIDC 2.0 (User.id -> SessionUser.sub)."),
@@ -201,26 +218,33 @@ def build_simple_deck():
         rt.font.size = Pt(9.5)
         rt.font.color.rgb = TEXT_SECONDARY
 
-    # Col 3: Enterprise Bleed & Battleground (CRIMSON TOLL + TAM)
-    add_card(s2, 0.9 + (col_w + gap) * 2, 2.7, col_w, 4.3, border=RGBColor(80, 25, 25))
+    # Col 3: Enterprise Toll & TAM
+    add_card(s2, 0.9 + (col_w + gap) * 2, 2.7, col_w, 4.3)
     t3 = s2.shapes.add_textbox(Inches(0.9 + (col_w + gap) * 2 + 0.2), Inches(2.85), Inches(col_w - 0.4), Inches(4.0))
     tf3 = t3.text_frame
     tf3.word_wrap = True
     tf3.margin_left = tf3.margin_top = tf3.margin_right = tf3.margin_bottom = 0
     p = tf3.paragraphs[0]
+    r_tag = p.add_run()
+    r_tag.text = "FINANCIAL DRAIN & MARKET SCALE\n"
+    r_tag.font.name = "Segoe UI"
+    r_tag.font.size = Pt(8.5)
+    r_tag.font.bold = True
+    r_tag.font.color.rgb = TEXT_TAG
+
     r = p.add_run()
     r.text = "3. Enterprise Toll & TAM\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(13)
     r.font.bold = True
-    r.font.color.rgb = ACCENT_CRIMSON
+    r.font.color.rgb = TEXT_TITLE
 
     c3_items = [
-        ("$240,000", "Direct Loss / Incident", "Gartner benchmark across engineering war rooms and SLA penalties.", ACCENT_CRIMSON),
-        ("$1,400,000", "Exposure Window", "Cumulative transaction exposure across clusters during 4-hr rollback.", ACCENT_CRIMSON),
-        ("4,000 Hours", "Annual CAB Drain", "Lost in emergency review boards ($2.4M wasted engineering salary).", ACCENT_CRIMSON),
-        ("Who We Fight", "Status Quo Tools", "Compilers (tsc, Turborepo) are blind to runtime drift; naive AI burns $4.50/PR.", ACCENT_AMBER),
-        ("$18.4B TAM", "DevSecOps Governance", "$4.2B SAM in monorepos; $380M SOM in regulated fintech & banking.", ACCENT_EMERALD)
+        ("$240,000", "Direct Loss / Incident", "Gartner benchmark across engineering war rooms and SLA penalties.", ACCENT_BLEED),
+        ("$1,400,000", "Exposure Window", "Cumulative transaction exposure across clusters during 4-hr rollback.", ACCENT_BLEED),
+        ("4,000 Hours", "Annual CAB Drain", "Lost in emergency review boards ($2.4M wasted engineering salary).", ACCENT_BLEED),
+        ("Who We Fight — ", "Status Quo Tools", "Compilers (tsc, Turborepo) are blind to runtime drift; naive AI burns $4.50/PR.", TEXT_PRIMARY),
+        ("$18.4B TAM", "DevSecOps Gate", "$4.2B SAM in monorepos; $380M SOM in regulated fintech & banking.", TEXT_PRIMARY)
     ]
     for num, lbl, desc, col in c3_items:
         pi = tf3.add_paragraph()
@@ -257,18 +281,18 @@ def build_simple_deck():
     p = tf3_h.paragraphs[0]
     
     r = p.add_run()
-    r.text = "DECOUPLED HYBRID PLATFORM (HOW WE CRUSH THE COMPETITION)\n"
+    r.text = "DECOUPLED HYBRID PLATFORM\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(10)
     r.font.bold = True
-    r.font.color.rgb = ACCENT_EMERALD
+    r.font.color.rgb = TEXT_TAG
 
     r = p.add_run()
     r.text = "Sub-Second AST Determinism Meets FastMCP.\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(28)
     r.font.bold = True
-    r.font.color.rgb = TEXT_PRIMARY
+    r.font.color.rgb = TEXT_TITLE
 
     p_lead = tf3_h.add_paragraph()
     p_lead.space_before = Pt(4)
@@ -280,17 +304,24 @@ def build_simple_deck():
 
     # Left: Tier 1 Deterministic Engine
     add_card(s3, 0.9, 2.7, 5.62, 3.6)
-    tb_t1 = s3.shapes.add_textbox(Inches(1.15), Inches(2.95), Inches(5.12), Inches(3.1))
+    tb_t1 = s3.shapes.add_textbox(Inches(1.15), Inches(2.9), Inches(5.12), Inches(3.2))
     tft1 = tb_t1.text_frame
     tft1.word_wrap = True
     tft1.margin_left = tft1.margin_top = tft1.margin_right = tft1.margin_bottom = 0
     p = tft1.paragraphs[0]
+    r_tag = p.add_run()
+    r_tag.text = "TIER 1 · LOCAL DETERMINISTIC ENGINE\n"
+    r_tag.font.name = "Segoe UI"
+    r_tag.font.size = Pt(8.5)
+    r_tag.font.bold = True
+    r_tag.font.color.rgb = TEXT_TAG
+
     r = p.add_run()
-    r.text = "Tier 1: Deterministic Engine (1.2ms, 0 Tokens)\n"
+    r.text = "Deterministic AST Engine (1.2ms, 0 Tokens)\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(13)
     r.font.bold = True
-    r.font.color.rgb = ACCENT_EMERALD
+    r.font.color.rgb = TEXT_TITLE
 
     t1_pts = [
         ("Tree-sitter AST Diffing: ", "Polyglot AST parsing (TypeScript, JavaScript, Python) extracts interface mutations and alias clusters in 1.2ms."),
@@ -300,7 +331,7 @@ def build_simple_deck():
     ]
     for bld, txt in t1_pts:
         pi = tft1.add_paragraph()
-        pi.space_before = Pt(7)
+        pi.space_before = Pt(6)
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
@@ -315,17 +346,24 @@ def build_simple_deck():
 
     # Right: Tier 2 FastMCP Granite 3.0
     add_card(s3, 6.81, 2.7, 5.62, 3.6)
-    tb_t2 = s3.shapes.add_textbox(Inches(7.06), Inches(2.95), Inches(5.12), Inches(3.1))
+    tb_t2 = s3.shapes.add_textbox(Inches(7.06), Inches(2.9), Inches(5.12), Inches(3.2))
     tft2 = tb_t2.text_frame
     tft2.word_wrap = True
     tft2.margin_left = tft2.margin_top = tft2.margin_right = tft2.margin_bottom = 0
     p = tft2.paragraphs[0]
+    r_tag = p.add_run()
+    r_tag.text = "TIER 2 · AGENTIC ORCHESTRATION\n"
+    r_tag.font.name = "Segoe UI"
+    r_tag.font.size = Pt(8.5)
+    r_tag.font.bold = True
+    r_tag.font.color.rgb = TEXT_TAG
+
     r = p.add_run()
-    r.text = "Tier 2: IBM Bob 2.0 & Granite 3.0 (FastMCP)\n"
+    r.text = "IBM Bob 2.0 & Granite 3.0 (FastMCP)\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(13)
     r.font.bold = True
-    r.font.color.rgb = TEXT_PRIMARY
+    r.font.color.rgb = TEXT_TITLE
 
     t2_pts = [
         ("FastMCP Protocol: ", "Bob Agent Mode invokes FastMCP stdio subagents passing only the isolated AST diff, never full repositories."),
@@ -335,7 +373,7 @@ def build_simple_deck():
     ]
     for bld, txt in t2_pts:
         pi = tft2.add_paragraph()
-        pi.space_before = Pt(7)
+        pi.space_before = Pt(6)
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
@@ -348,7 +386,7 @@ def build_simple_deck():
         rt.font.size = Pt(10)
         rt.font.color.rgb = TEXT_SECONDARY
 
-    # Bottom Economics Strip
+    # Bottom Economics Strip (Calm stealth card)
     add_card(s3, 0.9, 6.45, 11.533, 0.8)
     tb_eco = s3.shapes.add_textbox(Inches(1.15), Inches(6.52), Inches(11.033), Inches(0.65))
     tfeco = tb_eco.text_frame
@@ -361,20 +399,20 @@ def build_simple_deck():
     r1.font.name = "Segoe UI"
     r1.font.size = Pt(10)
     r1.font.bold = True
-    r1.font.color.rgb = TEXT_PRIMARY
+    r1.font.color.rgb = TEXT_TITLE
 
     r2 = pe.add_run()
     r2.text = "Naive LLM Sweeps burn 450,000 tokens ($4.50/PR) with 38s latency & hallucinations   |   "
     r2.font.name = "Segoe UI"
     r2.font.size = Pt(9.5)
-    r2.font.color.rgb = ACCENT_CRIMSON
+    r2.font.color.rgb = TEXT_SECONDARY
 
     r3 = pe.add_run()
     r3.text = "Vectis Hybrid: 0 tokens on triage (1.2ms) · 1,200 Granite tokens ($0.003) · 99.9% cost reduction · 100% deterministic"
     r3.font.name = "Segoe UI"
     r3.font.size = Pt(9.5)
     r3.font.bold = True
-    r3.font.color.rgb = ACCENT_EMERALD
+    r3.font.color.rgb = TEXT_PRIMARY
 
     # =========================================================================
     # SLIDE 4: Surgical Remediation & Release Governance
@@ -394,14 +432,14 @@ def build_simple_deck():
     r.font.name = "Segoe UI"
     r.font.size = Pt(10)
     r.font.bold = True
-    r.font.color.rgb = ACCENT_EMERALD
+    r.font.color.rgb = TEXT_TAG
 
     r = p.add_run()
     r.text = "Two-Tier Healing with Cryptographic Passports.\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(28)
     r.font.bold = True
-    r.font.color.rgb = TEXT_PRIMARY
+    r.font.color.rgb = TEXT_TITLE
 
     p_lead = tf4_h.add_paragraph()
     p_lead.space_before = Pt(4)
@@ -413,17 +451,24 @@ def build_simple_deck():
 
     # Left: Dual-Layer Auto-Healing Loop
     add_card(s4, 0.9, 2.7, 5.62, 3.6)
-    tb_h1 = s4.shapes.add_textbox(Inches(1.15), Inches(2.95), Inches(5.12), Inches(3.1))
+    tb_h1 = s4.shapes.add_textbox(Inches(1.15), Inches(2.9), Inches(5.12), Inches(3.2))
     tfh1 = tb_h1.text_frame
     tfh1.word_wrap = True
     tfh1.margin_left = tfh1.margin_top = tfh1.margin_right = tfh1.margin_bottom = 0
     p = tfh1.paragraphs[0]
+    r_tag = p.add_run()
+    r_tag.text = "DUAL-LAYER REMEDIATION\n"
+    r_tag.font.name = "Segoe UI"
+    r_tag.font.size = Pt(8.5)
+    r_tag.font.bold = True
+    r_tag.font.color.rgb = TEXT_TAG
+
     r = p.add_run()
     r.text = "Dual-Layer Auto-Healing Loop\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(13)
     r.font.bold = True
-    r.font.color.rgb = ACCENT_EMERALD
+    r.font.color.rgb = TEXT_TITLE
 
     h1_pts = [
         ("Layer 1 Ephemeral Proxy (14-Day TTL): ", "Synthesized ES6 Proxy with 4 traps (get, ownKeys, descriptor, toJSON). Preserves legacy access at runtime with zero data loss in Kafka and Stripe serialization."),
@@ -433,7 +478,7 @@ def build_simple_deck():
     ]
     for bld, txt in h1_pts:
         pi = tfh1.add_paragraph()
-        pi.space_before = Pt(7)
+        pi.space_before = Pt(6)
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
@@ -448,17 +493,24 @@ def build_simple_deck():
 
     # Right: Zero-Trust Cryptographic Admission Gate
     add_card(s4, 6.81, 2.7, 5.62, 3.6)
-    tb_h2 = s4.shapes.add_textbox(Inches(7.06), Inches(2.95), Inches(5.12), Inches(3.1))
+    tb_h2 = s4.shapes.add_textbox(Inches(7.06), Inches(2.9), Inches(5.12), Inches(3.2))
     tfh2 = tb_h2.text_frame
     tfh2.word_wrap = True
     tfh2.margin_left = tfh2.margin_top = tfh2.margin_right = tfh2.margin_bottom = 0
     p = tfh2.paragraphs[0]
+    r_tag = p.add_run()
+    r_tag.text = "CRYPTOGRAPHIC ADMISSION GATE\n"
+    r_tag.font.name = "Segoe UI"
+    r_tag.font.size = Pt(8.5)
+    r_tag.font.bold = True
+    r_tag.font.color.rgb = TEXT_TAG
+
     r = p.add_run()
     r.text = "Zero-Trust Cryptographic Admission Gate\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(13)
     r.font.bold = True
-    r.font.color.rgb = TEXT_PRIMARY
+    r.font.color.rgb = TEXT_TITLE
 
     h2_pts = [
         ("IBM Docling Extraction: ", "Parses PCI-DSS v4.0.1 Req 10.2.1 and Req 3.4.2 specifications directly into machine-verifiable AST compliance rules."),
@@ -468,7 +520,7 @@ def build_simple_deck():
     ]
     for bld, txt in h2_pts:
         pi = tfh2.add_paragraph()
-        pi.space_before = Pt(7)
+        pi.space_before = Pt(6)
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
@@ -494,10 +546,10 @@ def build_simple_deck():
     r1.font.name = "Segoe UI"
     r1.font.size = Pt(10)
     r1.font.bold = True
-    r1.font.color.rgb = ACCENT_EMERALD
+    r1.font.color.rgb = TEXT_TITLE
 
     r2 = pd.add_run()
-    r2.text = "Requires AI Sentinel compliance audit AND Human Release Manager Ed25519 signature before the passport unlocks. Neither human nor AI can unilaterally bypass release gates."
+    r2.text = "Requires AI Sentinel compliance audit AND Human Release Manager Ed25519 signature before the passport unlocks. Kyverno / OPA enforced."
     r2.font.name = "Segoe UI"
     r2.font.size = Pt(9.5)
     r2.font.color.rgb = TEXT_SECONDARY
@@ -520,14 +572,14 @@ def build_simple_deck():
     r.font.name = "Segoe UI"
     r.font.size = Pt(10)
     r.font.bold = True
-    r.font.color.rgb = ACCENT_EMERALD
+    r.font.color.rgb = TEXT_TAG
 
     r = p.add_run()
     r.text = "From Critical Hazard to Verified Release in 6.2s.\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(28)
     r.font.bold = True
-    r.font.color.rgb = TEXT_PRIMARY
+    r.font.color.rgb = TEXT_TITLE
 
     p_lead = tf5_h.add_paragraph()
     p_lead.space_before = Pt(4)
@@ -537,16 +589,16 @@ def build_simple_deck():
     r.font.size = Pt(11.5)
     r.font.color.rgb = TEXT_SECONDARY
 
-    # 4 Quick Metric Cards Across Top
+    # 4 Quick Metric Cards Across Top (Calm titanium cards)
     m_w = 2.66
     m_gap = 0.297
     metrics = [
-        ("1.2ms", "AST DETECTION LATENCY", TEXT_PRIMARY),
-        ("84 → 12", "POST-HEAL RISK SCORE", ACCENT_EMERALD),
-        ("0 Lines", "DOWNSTREAM CODE REWRITE", TEXT_PRIMARY),
-        ("85%", "CAB REVIEW TIME SAVED", ACCENT_EMERALD)
+        ("1.2ms", "AST DETECTION LATENCY"),
+        ("84 → 12", "POST-HEAL RISK SCORE"),
+        ("0 Lines", "DOWNSTREAM CODE REWRITE"),
+        ("85%", "CAB REVIEW TIME SAVED")
     ]
-    for i, (m_val, m_lbl, m_col) in enumerate(metrics):
+    for i, (m_val, m_lbl) in enumerate(metrics):
         m_left = 0.9 + i * (m_w + m_gap)
         add_card(s5, m_left, 2.7, m_w, 1.25)
         tb_m = s5.shapes.add_textbox(Inches(m_left + 0.15), Inches(2.8), Inches(m_w - 0.3), Inches(1.05))
@@ -559,31 +611,38 @@ def build_simple_deck():
         rv.font.name = "Segoe UI"
         rv.font.size = Pt(22)
         rv.font.bold = True
-        rv.font.color.rgb = m_col
+        rv.font.color.rgb = TEXT_TITLE
 
         rl = pm.add_run()
         rl.text = m_lbl
         rl.font.name = "Segoe UI"
         rl.font.size = Pt(8.5)
         rl.font.bold = True
-        rl.font.color.rgb = TEXT_MUTED
+        rl.font.color.rgb = TEXT_TAG
 
     # Bottom Two Equal Cards (ROI & Grand Jury Verdict)
     b_w = 5.62
     
     # Left: Commercial Model & CFO Payback
     add_card(s5, 0.9, 4.15, b_w, 3.1)
-    tb_c1 = s5.shapes.add_textbox(Inches(1.15), Inches(4.35), Inches(5.12), Inches(2.7))
+    tb_c1 = s5.shapes.add_textbox(Inches(1.15), Inches(4.3), Inches(5.12), Inches(2.75))
     tfc1 = tb_c1.text_frame
     tfc1.word_wrap = True
     tfc1.margin_left = tfc1.margin_top = tfc1.margin_right = tfc1.margin_bottom = 0
     p = tfc1.paragraphs[0]
+    r_tag = p.add_run()
+    r_tag.text = "COMMERCIAL MODEL & ENTERPRISE UNIT ECONOMICS\n"
+    r_tag.font.name = "Segoe UI"
+    r_tag.font.size = Pt(8.5)
+    r_tag.font.bold = True
+    r_tag.font.color.rgb = TEXT_TAG
+
     r = p.add_run()
-    r.text = "Commercial Model & CFO Payback Ratio:\n"
+    r.text = "Commercial Model & CFO Payback Ratio\n"
     r.font.name = "Segoe UI"
     r.font.size = Pt(13)
     r.font.bold = True
-    r.font.color.rgb = TEXT_PRIMARY
+    r.font.color.rgb = TEXT_TITLE
 
     roi_pts = [
         ("Seat-Based SaaS: ", "$49 - $99 / active committer / month (Self-serve CI triage, GitHub branch protection, monorepo graph)."),
@@ -593,13 +652,13 @@ def build_simple_deck():
     ]
     for bld, txt in roi_pts:
         pi = tfc1.add_paragraph()
-        pi.space_before = Pt(6)
+        pi.space_before = Pt(5)
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
         rb.font.size = Pt(9.5)
         rb.font.bold = True
-        rb.font.color.rgb = ACCENT_AMBER if "Payback" in bld else TEXT_PRIMARY
+        rb.font.color.rgb = TEXT_PRIMARY
         rt = pi.add_run()
         rt.text = txt
         rt.font.name = "Segoe UI"
@@ -608,24 +667,31 @@ def build_simple_deck():
 
     # Right: Grand Jury Roast & Master Audit Verdict
     add_card(s5, 6.81, 4.15, b_w, 3.1)
-    tb_c2 = s5.shapes.add_textbox(Inches(7.06), Inches(4.35), Inches(5.12), Inches(2.7))
+    tb_c2 = s5.shapes.add_textbox(Inches(7.06), Inches(4.3), Inches(5.12), Inches(2.75))
     tfc2 = tb_c2.text_frame
     tfc2.word_wrap = True
     tfc2.margin_left = tfc2.margin_top = tfc2.margin_right = tfc2.margin_bottom = 0
     p = tfc2.paragraphs[0]
+    r_tag = p.add_run()
+    r_tag.text = "ADVERSARIAL FORENSIC BENCHMARK\n"
+    r_tag.font.name = "Segoe UI"
+    r_tag.font.size = Pt(8.5)
+    r_tag.font.bold = True
+    r_tag.font.color.rgb = TEXT_TAG
+
     r = p.add_run()
     r.text = "Grand Jury Roast & Master Audit Verdict: "
     r.font.name = "Segoe UI"
     r.font.size = Pt(13)
     r.font.bold = True
-    r.font.color.rgb = TEXT_PRIMARY
+    r.font.color.rgb = TEXT_TITLE
     
     r_score = p.add_run()
     r_score.text = "95.8 / 100\n"
     r_score.font.name = "Segoe UI"
-    r_score.font.size = Pt(14)
+    r_score.font.size = Pt(13)
     r_score.font.bold = True
-    r_score.font.color.rgb = ACCENT_EMERALD
+    r_score.font.color.rgb = TEXT_TITLE
 
     jury_pts = [
         ("✓ 40/40 Forensic Audits Passed: ", "Tested against 20 Compiler/SRE Evaluators and 20 Cynical VC & CISO Personas with zero blocking defects."),
@@ -635,13 +701,13 @@ def build_simple_deck():
     ]
     for bld, txt in jury_pts:
         pi = tfc2.add_paragraph()
-        pi.space_before = Pt(6)
+        pi.space_before = Pt(5)
         rb = pi.add_run()
         rb.text = bld
         rb.font.name = "Segoe UI"
         rb.font.size = Pt(9.5)
         rb.font.bold = True
-        rb.font.color.rgb = ACCENT_EMERALD
+        rb.font.color.rgb = TEXT_PRIMARY
         rt = pi.add_run()
         rt.text = txt
         rt.font.name = "Segoe UI"
@@ -650,7 +716,7 @@ def build_simple_deck():
 
     out_path = os.path.abspath("docs/vectis-keynote-grand-finale.pptx")
     prs.save(out_path)
-    print(f"SUCCESS: Saved Clean 5-Slide Keynote PowerPoint with Urgent Disaster Precedents to {out_path}")
+    print(f"SUCCESS: Saved Cohesive Titanium Keynote PowerPoint to {out_path}")
 
 if __name__ == "__main__":
     build_simple_deck()
