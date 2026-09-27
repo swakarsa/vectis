@@ -103,12 +103,6 @@ flowchart TD
 
 Vectis Sentinel includes a reproduction of a critical financial monorepo drift:
 
-<div align="center">
-  <img src="assets/gif/blocked.gif" alt="Vectis Sentinel CLI Gatekeeper - PR #482 Incident Blocked" width="100%" />
-</div>
-
-<br/>
-
 * **File Modified:** `src/auth/session.ts`
 * **Breaking Mutations:**
   1. `User.id` renamed to `SessionUser.sub` (OIDC 2.0 Standard Alignment)
