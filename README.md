@@ -20,7 +20,7 @@
   <b>Stop relying on luck and flaky tests. Protect every pull request with deterministic AST contract intelligence and autonomous IBM Granite 3.0 shims.</b>
 </p>
 
-[Live Interactive Cockpit](https://vectis-sentinel.vercel.app/cockpit) • [Demo PR #482 Incident](https://vectis-sentinel.vercel.app/cockpit) • [Architecture Blueprint](docs/VECTIS_DEFINITIVE_MASTER_BLUEPRINT.md)
+[Live Cockpit](https://vectis-sentinel.vercel.app/cockpit) • [Demo View](https://vectis-sentinel.vercel.app/cockpit)
 
 </div>
 
