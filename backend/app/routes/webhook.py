@@ -17,15 +17,15 @@ FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "https://vectis-sentinel.verc
 def verify_signature(payload: bytes, signature_header: Optional[str]) -> bool:
     if not WEBHOOK_SECRET:
         return True  # If no secret configured in dev mode, allow pass-through
-    if not signature_header:
+    if not signature_header or not signature_header.startswith("sha256="):
         return False
-    
-    sha_name, signature = signature_header.split("=")
-    if sha_name != "sha256":
+        
+    parts = signature_header.split("=", 1)
+    if len(parts) != 2:
         return False
         
     mac = hmac.new(WEBHOOK_SECRET.encode("utf-8"), msg=payload, digestmod=hashlib.sha256)
-    return hmac.compare_digest(mac.hexdigest(), signature)
+    return hmac.compare_digest(mac.hexdigest(), parts[1])
 
 def run_github_pr_audit(
     owner: str,

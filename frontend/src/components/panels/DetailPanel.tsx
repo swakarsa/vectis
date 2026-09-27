@@ -179,7 +179,7 @@ export function DetailPanel({
   const isIdle = verdict === "IDLE";
 
   return (
-    <aside className="w-full lg:w-[420px] border-l border-white/[0.08] bg-[#0c0d10] flex flex-col h-full select-none shrink-0 overflow-hidden">
+    <aside className="w-full lg:w-[420px] border-l border-white/[0.08] bg-[#0c0d10] flex flex-col h-full shrink-0 overflow-hidden">
       {/* Top Metrics Section */}
       <div className="p-4 border-b border-white/[0.08] bg-[#0e0f13]">
         <div className="flex items-center justify-between mb-2">

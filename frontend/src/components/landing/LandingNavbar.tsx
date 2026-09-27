@@ -52,6 +52,9 @@ export function LandingNavbar() {
           <a href="#compliance" className="hover:text-zinc-200 transition-colors">
             PCI-DSS v4.0.1
           </a>
+          <a href="#faq" className="hover:text-zinc-200 transition-colors">
+            FAQ
+          </a>
         </div>
 
         {/* Right: CTA to Cockpit */}

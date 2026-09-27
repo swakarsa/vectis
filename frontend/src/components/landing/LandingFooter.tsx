@@ -88,6 +88,12 @@ export function LandingFooter() {
             >
               PCI-DSS Audit
             </a>
+            <a
+              href="#faq"
+              className="hover:text-zinc-200 transition-colors"
+            >
+              FAQ
+            </a>
           </div>
         </div>
       </div>

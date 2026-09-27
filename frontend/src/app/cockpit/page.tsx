@@ -371,6 +371,15 @@ export default function VectisCockpitPage() {
 
       // SCENARIO B1: Live Gate monitoring clean main branch (no breaking PR)
       if (mode === "live_github" && repoPRs.length === 0) {
+        if (!headSha) {
+          // Fail-closed security principle: if GitHub API rate-limited or HEAD sha could not be resolved, do not pass
+          setVerdict("BLOCK");
+          setRiskScore(84.0);
+          setChecksStatus("failure");
+          setMergeLocked(true);
+          return;
+        }
+
         setVerdict("PASS");
         setRiskScore(3.8);
         setBreakingChanges([]);
@@ -848,6 +857,25 @@ export default function VectisCockpitPage() {
                     description: {
                       text: "Apply IBM Granite 3.0 auto-heal compatibility shim.",
                     },
+                    artifactChanges: [
+                      {
+                        artifactLocation: {
+                          uri: change.file_path || "src/auth/session.ts",
+                          uriBaseId: "%SRCROOT%",
+                        },
+                        replacements: [
+                          {
+                            deletedRegion: {
+                              startLine: change.line_number || 12,
+                              startColumn: 1,
+                            },
+                            insertedContent: {
+                              text: "// Vectis Auto-Heal Shim: backward-compatibility proxy\n",
+                            },
+                          },
+                        ],
+                      },
+                    ],
                   },
                 ],
               })),
@@ -862,7 +890,8 @@ export default function VectisCockpitPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `vectis-security-audit-${headSha.slice(0, 7)}.sarif`;
+      const safeSha = (headSha || "sha256").slice(0, 7);
+      a.download = `vectis-security-audit-${safeSha}.sarif`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

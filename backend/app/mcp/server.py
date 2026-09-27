@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import sys
@@ -18,10 +19,14 @@ except ImportError:
 from app.ast.analyzer import ASTChangeDetector, DependencyDAGEngine
 from app.risk.scorer import BlastRiskCalculator
 from app.schemas.blast import PassportSigner
+from app.granite.synthesizer import IBMGraniteSynthesizer
+from app.compliance.pci_dss_engine import PCIDSSComplianceEngine
 
 dag_engine = DependencyDAGEngine()
 risk_calculator = BlastRiskCalculator()
 passport_signer = PassportSigner()
+granite_synthesizer = IBMGraniteSynthesizer()
+compliance_engine = PCIDSSComplianceEngine()
 
 def run_blast_analysis(
     repo_path: str,
@@ -62,7 +67,7 @@ def run_blast_analysis(
 if HAS_MCP:
     mcp = FastMCP(
         name="vectis-sentinel",
-        instructions="FastMCP Server for Monorepo Blast Radius and Shim Synthesis"
+        instructions="FastMCP Server for Autonomous Monorepo Blast Radius, IBM Granite 3.0 Shims & PCI-DSS Governance"
     )
 
     @mcp.tool()
@@ -73,8 +78,58 @@ if HAS_MCP:
         changed_files: List[str],
         ctx: Optional[Context] = None
     ) -> Dict[str, Any]:
-        """Analyzes PR diff using Tree-sitter AST & NetworkX DAG."""
+        """Analyzes PR contract mutations and multi-hop downstream blast radius using AST & NetworkX DAG."""
         return run_blast_analysis(repo_path, base_ref, head_ref, changed_files)
+
+    @mcp.tool()
+    async def synthesize_granite_shim(
+        symbol: str,
+        old_sig: str,
+        new_sig: str,
+        callers: Optional[List[str]] = None,
+        ctx: Optional[Context] = None
+    ) -> Dict[str, Any]:
+        """Synthesizes an ES6 Proxy compatibility adapter via IBM Granite 3.0 on watsonx.ai."""
+        res = granite_synthesizer.synthesize_adapter(
+            symbol=symbol,
+            old_sig=old_sig,
+            new_sig=new_sig,
+            callers=callers or []
+        )
+        return {
+            "status": "success",
+            "symbol": symbol,
+            "shim_code": res.shim_code,
+            "remappings": res.remappings,
+            "source": res.source,
+            "pci_dss_continuous": res.pci_dss_continuous,
+        }
+
+    @mcp.tool()
+    async def audit_pci_compliance(
+        diff_text: str,
+        file_path: str = "src/auth/session.ts",
+        ctx: Optional[Context] = None
+    ) -> Dict[str, Any]:
+        """Audits pull request diff against PCI-DSS v4.0.1 rules (Req 10.2.1, 3.4.2, 8.2.8)."""
+        report = compliance_engine.audit_diff(diff_text=diff_text, file_path=file_path)
+        return {
+            "status": "success",
+            "is_blocking": report.is_blocking,
+            "total_penalty": report.total_penalty,
+            "evaluated_symbols_count": report.evaluated_symbols_count,
+            "violations": [
+                {
+                    "rule_id": v.rule_id,
+                    "symbol_name": v.symbol_name,
+                    "severity": v.severity,
+                    "penalty_score": v.penalty_score,
+                    "remediation_guidance": v.remediation_guidance,
+                }
+                for v in report.violations
+            ],
+            "engine_fingerprint": report.engine_fingerprint,
+        }
 
     @mcp.tool()
     async def generate_release_passport(
@@ -83,17 +138,26 @@ if HAS_MCP:
         author: str,
         risk_score: float,
         verdict: str,
-        shim_applied: bool
+        shim_applied: bool,
+        ctx: Optional[Context] = None
     ) -> Dict[str, Any]:
-        """Issues SHA-256 Cryptographic Release Passport."""
+        """Issues an RFC 8785 canonical JSON signed Cryptographic Release Passport."""
         if verdict == "BLOCK" and not shim_applied:
-            raise ValueError("Cannot issue Release Passport: PR is BLOCKED!")
+            raise ValueError("Cannot issue Release Passport: PR is BLOCKED due to critical contract drift!")
         return passport_signer.create_signed_passport(
             pr_number, commit_sha, author, risk_score, verdict, shim_applied
         )
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Vectis FastMCP Server")
+    parser.add_argument("--transport", choices=["stdio", "sse"], default="stdio", help="Transport protocol (stdio or sse)")
+    parser.add_argument("--port", type=int, default=8001, help="Port for SSE transport")
+    args = parser.parse_args()
+
     if HAS_MCP:
-        mcp.run(transport="stdio")
+        if args.transport == "sse":
+            mcp.run(transport="sse", port=args.port)
+        else:
+            mcp.run(transport="stdio")
     else:
         print("FastMCP module not installed. Standalone mode ready.")

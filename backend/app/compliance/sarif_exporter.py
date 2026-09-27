@@ -12,6 +12,7 @@ physical artifact URI locations, code snippets, and IBM Granite 3.0 auto-heal gu
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -240,6 +241,7 @@ class SARIFExporter:
 
             start_line = max(v.line_number, 1)
             snippet_text = v.raw_snippet.strip() if v.raw_snippet else f"Violation: {v.symbol_name}"
+            line_hash = hashlib.sha256(f"{normalized_path}:{start_line}:{snippet_text}".encode("utf-8")).hexdigest()
 
             result_entry: Dict[str, Any] = {
                 "ruleId": rule_id,
@@ -248,6 +250,9 @@ class SARIFExporter:
                     "text": (
                         f"[{v.severity}] {v.symbol_name}: {v.remediation_guidance}"
                     )
+                },
+                "partialFingerprints": {
+                    "primaryLocationLineHash": line_hash,
                 },
                 "locations": [
                     {
@@ -309,36 +314,43 @@ class SARIFExporter:
 
             results.append(result_entry)
 
-        sarif_payload: Dict[str, Any] = {
-            "$schema": SARIF_SCHEMA_URI,
-            "version": SARIF_VERSION,
-            "runs": [
-                {
-                    "tool": {
-                        "driver": {
-                            "name": self.tool_name,
-                            "version": self.tool_version,
-                            "semanticVersion": self.tool_version,
-                            "informationUri": "https://github.com/swakarsa/vectis",
-                            "rules": rules_list,
-                        }
-                    },
-                    "results": results,
-                    "invocations": [
-                        {
-                            "executionSuccessful": not report.is_blocking,
-                            "endTimeUtc": report.audit_timestamp,
-                            "properties": {
-                                "totalPenalty": report.total_penalty,
-                                "isBlocking": report.is_blocking,
-                                "evaluatedSymbols": report.evaluated_symbols_count,
-                                "engineFingerprint": report.engine_fingerprint,
-                            },
-                        }
-                    ],
-                }
-            ],
-        }
+            # Ensure endTimeUtc conforms to ISO-8601 UTC ending with 'Z'
+            utc_timestamp = report.audit_timestamp
+            if utc_timestamp.endswith("+00:00"):
+                utc_timestamp = utc_timestamp[:-6] + "Z"
+            elif not utc_timestamp.endswith("Z"):
+                utc_timestamp += "Z"
+
+            sarif_payload: Dict[str, Any] = {
+                "$schema": SARIF_SCHEMA_URI,
+                "version": SARIF_VERSION,
+                "runs": [
+                    {
+                        "tool": {
+                            "driver": {
+                                "name": self.tool_name,
+                                "version": self.tool_version,
+                                "semanticVersion": self.tool_version,
+                                "informationUri": "https://github.com/swakarsa/vectis",
+                                "rules": rules_list,
+                            }
+                        },
+                        "results": results,
+                        "invocations": [
+                            {
+                                "executionSuccessful": True,
+                                "endTimeUtc": utc_timestamp,
+                                "properties": {
+                                    "totalPenalty": report.total_penalty,
+                                    "isBlocking": report.is_blocking,
+                                    "evaluatedSymbols": report.evaluated_symbols_count,
+                                    "engineFingerprint": report.engine_fingerprint,
+                                },
+                            }
+                        ],
+                    }
+                ],
+            }
 
         return sarif_payload
 

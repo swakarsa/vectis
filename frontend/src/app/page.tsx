@@ -6,6 +6,7 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { OutageProblemSection } from "@/components/landing/OutageProblemSection";
 import { WorkflowLoopSection } from "@/components/landing/WorkflowLoopSection";
 import { BentoGridSection } from "@/components/landing/BentoGridSection";
+import { FAQSection } from "@/components/landing/FAQSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
 export default function LandingPage() {
@@ -26,7 +27,10 @@ export default function LandingPage() {
       {/* 5. 4 Core Pillars Bento Grid */}
       <BentoGridSection />
 
-      {/* 6. Final Call to Action & Footer */}
+      {/* 6. FAQ Section */}
+      <FAQSection />
+
+      {/* 7. Final Call to Action & Footer */}
       <LandingFooter />
     </main>
   );

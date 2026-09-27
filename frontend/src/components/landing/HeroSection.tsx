@@ -18,7 +18,7 @@ export function HeroSection() {
   const [activeTab, setActiveTab] = useState<"cli" | "diff">("cli");
 
   const handleCopy = () => {
-    navigator.clipboard.writeText("npx vectis-gate audit --pr 482");
+    navigator.clipboard.writeText("vectis gate audit --pr 482 --repo fintech-monorepo");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -48,7 +48,7 @@ export function HeroSection() {
         {/* Main Typographic Headline */}
         <div className="text-center max-w-4xl mx-auto">
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1]">
-            Predictive Release Safety for Enterprise Monorepos.
+            Autonomous Release Gate for Monorepo Drift.
           </h1>
 
           <p className="mt-4 text-sm sm:text-base text-zinc-400 max-w-2xl mx-auto leading-relaxed">

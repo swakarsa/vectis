@@ -30,7 +30,7 @@ app.add_middleware(
         "https://vectis-sentinel.vercel.app",
         "https://vectis.vercel.app",
     ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"^https:\/\/vectis(-[a-zA-Z0-9_-]+)?(-swakarsa)?\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
