@@ -26,6 +26,8 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import quote, urlparse
+from urllib.request import Request, urlopen
 
 # Ensure app package is importable and Python stdlib 'ast' is not shadowed
 _CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -148,8 +150,6 @@ def detect_current_repo_name(target_path: Optional[str] = None) -> str:
     3. Fallback: extracts root directory name using `git rev-parse --show-toplevel` or os.path.basename.
     4. Fallback: "local/workspace"
     """
-    import urllib.parse
-
     env_repo = os.getenv("VECTIS_REPO")
     if env_repo and env_repo.strip():
         return env_repo.strip()
@@ -171,7 +171,7 @@ def detect_current_repo_name(target_path: Optional[str] = None) -> str:
                 return parts.strip()
         # Handle HTTPS: https://github.com/owner/repo.git
         elif "://" in url:
-            parsed = urllib.parse.urlparse(url)
+            parsed = urlparse(url)
             path = parsed.path.strip("/")
             if path.endswith(".git"):
                 path = path[:-4]
@@ -578,12 +578,11 @@ def handle_audit(args: argparse.Namespace) -> int:
 
     # Auto-heal recommendations & Incident Dispatch
     active_repo = detect_current_repo_name(repo_path)
-    encoded_repo = urllib.parse.quote(active_repo, safe="")
+    encoded_repo = quote(active_repo, safe="")
 
     if verdict == "BLOCK":
         import datetime
         import uuid
-        import urllib.request
         
         incident_id = f"INC-{datetime.datetime.utcnow().strftime('%Y%m%d%H%M')}-{uuid.uuid4().hex[:6].upper()}"
         cloud_url = f"https://vectis-sentinel.vercel.app/cockpit?incident={incident_id}&risk={total_score:.1f}&repo={encoded_repo}"
@@ -600,12 +599,12 @@ def handle_audit(args: argparse.Namespace) -> int:
                 "downstream_impact": unique_impact,
                 "source": "terminal-pre-push"
             }).encode("utf-8")
-            req = urllib.request.Request(
+            req = Request(
                 "http://127.0.0.1:8000/api/incidents",
                 data=payload,
                 headers={"Content-Type": "application/json"}
             )
-            urllib.request.urlopen(req, timeout=1.0)
+            urlopen(req, timeout=1.0)
         except Exception:
             pass  # Failsafe: Cockpit page reads incident parameters from query string seamlessly
 
