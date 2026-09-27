@@ -431,7 +431,7 @@ export async function setGitHubCommitStatus(params: {
       },
       body: JSON.stringify({
         state: params.state,
-        context: "vectis/release-gate",
+        context: "vectis/release-safety-gate",
         description: params.description.slice(0, 140),
         target_url: params.targetUrl || "https://vectis-sentinel.vercel.app/cockpit",
       }),

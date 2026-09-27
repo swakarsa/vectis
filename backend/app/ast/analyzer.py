@@ -24,11 +24,12 @@ class ASTChangeDetector:
         return mutations
 
     def _extract_ts_interfaces(self, source: str) -> Dict[str, Dict[str, str]]:
-        """Balanced-braces grammar parser handling nested structures, interfaces, and type aliases."""
+        """Balanced-braces grammar parser handling nested structures, interfaces, type aliases, generics, and extends."""
         interfaces: Dict[str, Dict[str, str]] = {}
-        # Matches `export interface Name {`, `interface Name {`, `export type Name = {`, etc.
+        # Matches `interface Name<T> extends Base {`, `type Name<K, V> = {`, `export interface Name {`, etc.
         pattern = re.compile(
-            r"(?:export\s+)?(?:interface|type)\s+(\w+)\s*(?:=\s*)?\{", re.MULTILINE
+            r"(?:export\s+)?(?:interface|type)\s+(\w+)(?:<[^>]+>)?(?:\s+extends\s+[^{=]+)?\s*(?:=\s*)?\{",
+            re.MULTILINE,
         )
         for match in pattern.finditer(source):
             name = match.group(1)
@@ -46,35 +47,52 @@ class ASTChangeDetector:
             interfaces[name] = fields
         return interfaces
 
+    def _parse_field_or_method(self, stmt: str) -> Optional[Tuple[str, str]]:
+        """Parses a single TypeScript property or method statement."""
+        stmt = stmt.strip().rstrip(";")
+        if not stmt:
+            return None
+        # Check method signature first: e.g. validate(token: string): Promise<boolean>
+        method_match = re.match(r"^(\w+)\??(?:<[^>]+>)?\s*\((.*?)\)\s*:\s*(.+)$", stmt, re.DOTALL)
+        if method_match:
+            name = method_match.group(1)
+            params = method_match.group(2).strip()
+            ret_type = method_match.group(3).strip()
+            return name, f"({params}) => {ret_type}"
+        # Standard property: e.g. id?: string, tier: 'free' | 'pro'
+        field_match = re.match(r"^(\w+)\??\s*:\s*(.+)$", stmt, re.DOTALL)
+        if field_match:
+            return field_match.group(1), field_match.group(2).strip()
+        return None
+
     def _parse_fields(self, body: str) -> Dict[str, str]:
         """Parse top-level and nested structure fields from interface/type body."""
         fields: Dict[str, str] = {}
         depth = 0
         current_line = ""
-        # Strip line comments
-        cleaned_body = re.sub(r"//.*$", "", body, flags=re.MULTILINE)
+        # Strip block comments and line comments
+        cleaned_body = re.sub(r"/\*.*?\*/", "", body, flags=re.DOTALL)
+        cleaned_body = re.sub(r"//.*$", "", cleaned_body, flags=re.MULTILINE)
         for char in cleaned_body:
-            if char in "{[":
+            if char in "({[":
                 depth += 1
                 current_line += char
-            elif char in "}]":
+            elif char in ")}]":
                 depth -= 1
                 current_line += char
-            elif (char == ";" or char == "\n" or (char == "," and depth <= 1)) and depth == 0:
-                trimmed = current_line.strip()
-                if trimmed:
-                    field_match = re.match(r"^(\w+)\??\s*:\s*(.+)$", trimmed, re.DOTALL)
-                    if field_match:
-                        fields[field_match.group(1)] = field_match.group(2).strip().rstrip(";")
+            elif (char == ";" or char == "\n" or char == ",") and depth == 0:
+                parsed = self._parse_field_or_method(current_line)
+                if parsed:
+                    fields[parsed[0]] = parsed[1]
                 current_line = ""
             else:
                 current_line += char
 
         # Process trailing statement
         if current_line.strip() and depth == 0:
-            field_match = re.match(r"^(\w+)\??\s*:\s*(.+)$", current_line.strip(), re.DOTALL)
-            if field_match:
-                fields[field_match.group(1)] = field_match.group(2).strip().rstrip(";")
+            parsed = self._parse_field_or_method(current_line)
+            if parsed:
+                fields[parsed[0]] = parsed[1]
 
         return fields
 

@@ -119,3 +119,58 @@ def test_dag_engine_cycle_resilience():
     # Should safely compute downstream impact without infinite loop
     impact = dag.calculate_downstream_impact("a.ts", "Symbol")
     assert isinstance(impact, list)
+
+
+def test_extract_ts_interfaces_generics_and_extends():
+    detector = ASTChangeDetector(repo_path="")
+    source = """
+    /* Core API responses */
+    export interface ApiResponse<T> {
+        data: T;
+        status: number;
+    }
+
+    export interface UserSession extends BaseSession {
+        token: string;
+        validateToken(token: string): Promise<boolean>;
+    }
+
+    export type Dict<K, V> = {
+        key: K;
+        value: V;
+    };
+    """
+    interfaces = detector._extract_ts_interfaces(source)
+    assert "ApiResponse" in interfaces
+    assert "data" in interfaces["ApiResponse"]
+    assert "status" in interfaces["ApiResponse"]
+    assert "UserSession" in interfaces
+    assert "token" in interfaces["UserSession"]
+    assert "validateToken" in interfaces["UserSession"]
+    assert "Promise<boolean>" in interfaces["UserSession"]["validateToken"]
+    assert "Dict" in interfaces
+    assert "key" in interfaces["Dict"]
+    assert "value" in interfaces["Dict"]
+
+
+def test_parse_ts_contract_mutations_method_signature_mutation():
+    detector = ASTChangeDetector(repo_path="")
+    base_source = """
+    export interface AuthService {
+        verify(token: string): boolean;
+    }
+    """
+    head_source = """
+    export interface AuthService {
+        verify(token: string, realm: string): Promise<boolean>;
+    }
+    """
+    mutations = detector._parse_ts_contract_mutations(
+        "src/auth/service.ts", base_source, head_source
+    )
+    assert len(mutations) == 1
+    m = mutations[0]
+    assert m["symbol_name"] == "AuthService.verify"
+    assert m["mutation_type"] == "type_change"
+    assert "Promise<boolean>" in m["new_signature"]
+

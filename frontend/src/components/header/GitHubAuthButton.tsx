@@ -93,25 +93,10 @@ export const GitHubAuthButton: React.FC = () => {
         }
       }
 
-      setErrorMsg("Invalid GitHub Personal Access Token");
+      // 3. If API returned non-OK or failed
+      setErrorMsg("Invalid GitHub Personal Access Token. Please check token permissions or use 1-Click Team Account.");
     } catch {
-      // Fallback: local instant verification for official team account or demo
-      if (token.startsWith("ghp_") || token.includes("swakarsa") || token === "demo") {
-        const teamUser: GitHubUser = {
-          id: 9948201,
-          login: "swakarsa",
-          name: "Swakarsa Enterprise",
-          avatar_url: "https://avatars.githubusercontent.com/u/9948201?v=4",
-          html_url: "https://github.com/swakarsa",
-        };
-        setUser(teamUser);
-        localStorage.setItem("vectis_github_user", JSON.stringify(teamUser));
-        localStorage.setItem("vectis_github_token", token.trim());
-        setModalOpen(false);
-        setPatInput("");
-        return;
-      }
-      setErrorMsg("Could not verify token with GitHub API");
+      setErrorMsg("Could not verify token with GitHub API. Please check your network connection or use 1-Click Team Account.");
     } finally {
       setLoading(false);
     }
@@ -135,6 +120,8 @@ export const GitHubAuthButton: React.FC = () => {
     setUser(null);
     localStorage.removeItem("vectis_github_user");
     localStorage.removeItem("vectis_github_token");
+    sessionStorage.removeItem("vectis_github_user");
+    sessionStorage.removeItem("vectis_github_token");
   };
 
   return (
