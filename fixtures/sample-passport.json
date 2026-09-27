@@ -1,0 +1,11 @@
+{
+  "pr_number": 482,
+  "commit_sha": "a7f83b2e9d41",
+  "author": "alex-monorepo-dev",
+  "risk_score": 12.4,
+  "verdict": "PASS",
+  "shim_applied": true,
+  "issued_at": "2026-09-27T05:48:34.389086+00:00",
+  "engine": "vectis-sentinel-v1.0",
+  "passport_hash": "sha256:3f41fd7a2b54d4de1724ac2a5e7f0c92063f046572ccf6d6021d96b1ba9d3bcb"
+}
