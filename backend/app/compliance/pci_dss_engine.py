@@ -266,7 +266,7 @@ _RE_INJECTION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"(?i)act\s+as\s+(an?\s+)?ai"),
     re.compile(r"(?i)disregard\s+(previous|prior|earlier)\s+instructions?"),
     re.compile(r"(?i)\bprompt\s*injection\b"),
-    re.compile(r"<\|system\|>.*?<\|user\|>", re.DOTALL),
+    re.compile(r"<\|system\|>[^<]{0,500}<\|user\|>"),
 ]
 
 # --- SOC2 CC6.1: Tenant isolation ---
@@ -447,17 +447,23 @@ def _rule_pan_exposure(
         if not stripped:
             continue
 
+        # Skip comment lines unless an actual raw PAN digit sequence is present
+        is_comment = stripped.startswith(("//", "*", "/*", "#"))
+        if is_comment and not (_RE_PAN_RAW.search(stripped) and any(_is_luhn_valid(m.group(0)) for m in _RE_PAN_RAW.finditer(stripped))):
+            continue
+
         detected_issue: Optional[tuple[str, str]] = None  # (field_desc, severity)
+        symbol = _extract_symbol_from_line(stripped)
 
         # 1. CVV/CVC: PCI-DSS v4.0.1 Req 3.3.1 strictly forbids post-auth retention under ANY circumstance
-        if _RE_CVV_FIELD.search(stripped):
+        if _RE_CVV_FIELD.search(symbol) or (_RE_CVV_FIELD.search(stripped) and _looks_like_schema_field(stripped)):
             detected_issue = ("CVV/CVC sensitive authentication data (prohibited post-auth)", SEVERITY_CRITICAL)
         elif _RE_TOKENIZED.search(stripped):
             # Safe tokenization wrapper for non-CVV payment card data
             continue
-        elif _RE_PAN_FIELD.search(stripped):
+        elif _RE_PAN_FIELD.search(symbol) or (_RE_PAN_FIELD.search(stripped) and _looks_like_schema_field(stripped)):
             detected_issue = ("raw PAN / card-number field", SEVERITY_CRITICAL)
-        elif _RE_EXPIRY_FIELD.search(stripped):
+        elif _RE_EXPIRY_FIELD.search(symbol) or (_RE_EXPIRY_FIELD.search(stripped) and _looks_like_schema_field(stripped)):
             detected_issue = ("card expiry field", SEVERITY_HIGH)
         elif _RE_PAN_RAW.search(stripped):
             raw_match = _RE_PAN_RAW.search(stripped)
@@ -469,7 +475,6 @@ def _rule_pan_exposure(
             continue
 
         field_desc, severity = detected_issue
-        symbol = _extract_symbol_from_line(stripped)
         vid = _make_violation_id(RULE_PCI_3_4_2, ctx.file_path, symbol)
         is_cvv = "CVV/CVC" in field_desc
         if is_cvv:
@@ -668,6 +673,9 @@ def _rule_injection_surface(
     attempt to manipulate the AI review pipeline -- prompt-injection attacks
     embedded in code comments, string literals, or commit messages.
     """
+    if _is_test_path(ctx.file_path):
+        return []
+
     violations: list[ComplianceViolation] = []
 
     for pattern in _RE_INJECTION_PATTERNS:
@@ -795,18 +803,35 @@ def _extract_symbol_from_line(line: str) -> str:
     return "(unknown)"
 
 
+def _is_test_path(file_path: str) -> bool:
+    """Return True if the file path points to a test, fixture, or mock."""
+    norm = file_path.replace("\\", "/").lower()
+    parts = norm.split("/")
+    filename = parts[-1]
+    if any(p in ("tests", "test", "__tests__", "fixtures", "node_modules") for p in parts[:-1]):
+        return True
+    if filename.startswith("test_") or filename.endswith((".test.ts", ".spec.ts", ".test.tsx", ".spec.tsx", "_test.py")):
+        return True
+    return False
+
+
 def _looks_like_schema_field(line: str) -> bool:
     """Return True if the line looks like a TypeScript interface field declaration.
 
-    Discriminates against function parameter lists, local variable assignments,
-    and import statements to reduce false positives on REQ-8.2.8.
+    Discriminates against function parameter lists, object literals,
+    local variable assignments, and import statements to reduce false positives on REQ-8.2.8.
     """
     stripped = line.strip()
+    if stripped.startswith(("//", "*", "/*", "#")):
+        return False
+    # Object literals / function call arguments end with comma
+    if stripped.endswith(","):
+        return False
     # Interface/type field: "  fieldName: Type" or "  fieldName?: Type"
     if re.match(r"^[A-Za-z_$][A-Za-z0-9_$]*\s*\??:\s*\S", stripped):
         return True
     # Exported const that is clearly a type definition
-    if re.match(r"^export\s+(type|interface|const)\s+", stripped):
+    if re.match(r"^export\s+(type|interface)\s+", stripped):
         return True
     return False
 

@@ -129,6 +129,8 @@ def run_git_command(args: List[str], cwd: Optional[str] = None) -> Tuple[int, st
             cwd=cwd or os.getcwd(),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
         )
         return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
@@ -138,57 +140,83 @@ def run_git_command(args: List[str], cwd: Optional[str] = None) -> Tuple[int, st
         return -1, "", str(e)
 
 
+def is_auditable_code_file(path: str) -> bool:
+    """Filter out tests, fixtures, node_modules, and non-code files."""
+    norm = path.replace("\\", "/").lower()
+    parts = norm.split("/")
+    filename = parts[-1]
+    ignored_dirs = {
+        "tests", "test", "__tests__", "fixtures", "node_modules",
+        ".git", ".next", "dist", "build", ".bob", ".turbo", ".pytest_cache"
+    }
+    if any(p in ignored_dirs for p in parts[:-1]):
+        return False
+    if filename.startswith("test_") or filename.endswith(
+        (".test.ts", ".spec.ts", ".test.tsx", ".spec.tsx", ".test.js", ".spec.js", "_test.py")
+    ):
+        return False
+    code_extensions = (".ts", ".tsx", ".js", ".jsx")
+    return filename.endswith(code_extensions) and not filename.endswith(".d.ts")
+
+
 def discover_modified_files(
     repo_path: str, diff_spec: Optional[str] = None, staged_only: bool = False
-) -> Tuple[List[str], str]:
+) -> Tuple[List[str], Dict[str, str], str]:
     """
-    Discovers modified TypeScript/JavaScript files and retrieves unified diff text.
-    Returns (list_of_modified_ts_js_files, unified_diff_text).
+    Discovers modified TypeScript/JavaScript files and retrieves isolated
+    per-file diffs and aggregated unified diff text.
+    Returns (list_of_modified_files, dict_of_file_diffs, unified_diff_text).
     """
-    ts_extensions = (".ts", ".tsx", ".js", ".jsx")
-    unified_diff = ""
+    diff_cmd_base: List[str] = ["diff"]
     modified_files: List[str] = []
 
     if staged_only:
+        diff_cmd_base = ["diff", "--cached"]
         code, names_out, _ = run_git_command(["diff", "--cached", "--name-only"], cwd=repo_path)
-        if code == 0 and names_out:
+        if code == 0 and names_out.strip():
             modified_files = [line.strip() for line in names_out.splitlines() if line.strip()]
-        code, diff_out, _ = run_git_command(["diff", "--cached"], cwd=repo_path)
-        if code == 0:
-            unified_diff = diff_out
 
     elif diff_spec:
+        diff_cmd_base = ["diff", diff_spec]
         code, names_out, _ = run_git_command(["diff", "--name-only", diff_spec], cwd=repo_path)
-        if code == 0 and names_out:
+        if code == 0 and names_out.strip():
             modified_files = [line.strip() for line in names_out.splitlines() if line.strip()]
-        code, diff_out, _ = run_git_command(["diff", diff_spec], cwd=repo_path)
-        if code == 0:
-            unified_diff = diff_out
 
     else:
         # Default: check working tree changes against HEAD
         code, names_out, _ = run_git_command(["diff", "--name-only", "HEAD"], cwd=repo_path)
-        if code == 0 and names_out:
+        if code == 0 and names_out.strip():
+            diff_cmd_base = ["diff", "HEAD"]
             modified_files = [line.strip() for line in names_out.splitlines() if line.strip()]
-            code, diff_out, _ = run_git_command(["diff", "HEAD"], cwd=repo_path)
-            if code == 0:
-                unified_diff = diff_out
         else:
             # Fallback to unstaged diff
             code, names_out, _ = run_git_command(["diff", "--name-only"], cwd=repo_path)
-            if code == 0 and names_out:
+            if code == 0 and names_out.strip():
+                diff_cmd_base = ["diff"]
                 modified_files = [line.strip() for line in names_out.splitlines() if line.strip()]
-                code, diff_out, _ = run_git_command(["diff"], cwd=repo_path)
-                if code == 0:
-                    unified_diff = diff_out
+            else:
+                # If working tree is clean, inspect outgoing commits against upstream (pre-push scenario)
+                code, names_out, _ = run_git_command(["diff", "--name-only", "@{u}..HEAD"], cwd=repo_path)
+                if code == 0 and names_out.strip():
+                    diff_cmd_base = ["diff", "@{u}..HEAD"]
+                    modified_files = [line.strip() for line in names_out.splitlines() if line.strip()]
+                else:
+                    code, names_out, _ = run_git_command(["diff", "--name-only", "origin/main..HEAD"], cwd=repo_path)
+                    if code == 0 and names_out.strip():
+                        diff_cmd_base = ["diff", "origin/main..HEAD"]
+                        modified_files = [line.strip() for line in names_out.splitlines() if line.strip()]
 
-    # Filter only TypeScript and JavaScript files
-    relevant_files = [
-        f for f in modified_files
-        if f.endswith(ts_extensions) and not f.endswith(".d.ts")
-    ]
+    # Filter auditable files
+    relevant_files = [f for f in modified_files if is_auditable_code_file(f)]
 
-    return relevant_files, unified_diff
+    per_file_diffs: Dict[str, str] = {}
+    for f in relevant_files:
+        code, f_diff, _ = run_git_command(diff_cmd_base + ["--", f], cwd=repo_path)
+        if code == 0 and f_diff:
+            per_file_diffs[f] = f_diff
+
+    unified_diff = "\n".join(per_file_diffs.values())
+    return relevant_files, per_file_diffs, unified_diff
 
 
 # ---------------------------------------------------------------------------
@@ -304,7 +332,7 @@ def handle_audit(args: argparse.Namespace) -> int:
     sarif_output = args.sarif
 
     # 1. Discover modified files and diff
-    changed_files, unified_diff = discover_modified_files(
+    changed_files, file_diffs, unified_diff = discover_modified_files(
         repo_path=repo_path,
         diff_spec=diff_spec,
         staged_only=staged_only,
@@ -313,6 +341,16 @@ def handle_audit(args: argparse.Namespace) -> int:
     # 2. Run AST Change Detector
     detector = ASTChangeDetector(repo_path=repo_path)
     breaking_changes: List[Dict[str, Any]] = []
+
+    base_ref = "main"
+    head_ref = "feature"
+    if diff_spec:
+        if "..." in diff_spec:
+            parts = diff_spec.split("...")
+            base_ref, head_ref = parts[0], parts[1]
+        elif ".." in diff_spec:
+            parts = diff_spec.split("..")
+            base_ref, head_ref = parts[0], parts[1]
 
     if not changed_files:
         # Check if session.ts exists in fixtures or target directory as demo fallback
@@ -327,7 +365,7 @@ def handle_audit(args: argparse.Namespace) -> int:
             changed_files = ["src/auth/session.ts"]
     else:
         for fp in changed_files:
-            mutations = detector.detect_contract_mutations(fp, "main", "feature")
+            mutations = detector.detect_contract_mutations(fp, base_ref, head_ref)
             breaking_changes.extend(mutations)
 
     # 3. Calculate downstream impact via DAG Engine
@@ -353,11 +391,18 @@ def handle_audit(args: argparse.Namespace) -> int:
 
     # 4. Evaluate PCI-DSS Compliance
     compliance_engine = PCIDSSComplianceEngine()
-    compliance_report = compliance_engine.audit_ast_diff(
-        file_path=changed_files[0] if changed_files else "src/auth/session.ts",
-        diff_text=unified_diff,
-        detected_mutations=breaking_changes,
-    )
+    audit_diffs = [{"file_path": fp, "diff_text": file_diffs.get(fp, "")} for fp in changed_files]
+    if audit_diffs:
+        compliance_report = compliance_engine.audit_multiple_files(
+            file_diffs=audit_diffs,
+            all_mutations=breaking_changes,
+        )
+    else:
+        compliance_report = compliance_engine.audit_ast_diff(
+            file_path="src/auth/session.ts",
+            diff_text="",
+            detected_mutations=breaking_changes,
+        )
 
     # 5. Compute Risk Score
     risk_calculator = BlastRiskCalculator()
