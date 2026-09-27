@@ -14,8 +14,8 @@ import json
 import urllib.request
 from pathlib import Path
 
-BACKEND_URL = "http://127.0.0.1:8000"
-FRONTEND_URL = "http://127.0.0.1:3000"
+ENGINE_URL = "http://127.0.0.1:8000"
+CONSOLE_URL = "http://127.0.0.1:3000"
 
 def log_step(title):
     print(f"\n[STEP] {title}")
@@ -33,26 +33,26 @@ def main():
     print("=" * 60)
 
     # 1. Health check
-    log_step("1. Checking Sentinel Backend Health")
+    log_step("1. Checking Sentinel Engine Health")
     try:
-        req = urllib.request.urlopen(f"{BACKEND_URL}/health", timeout=5)
+        req = urllib.request.urlopen(f"{ENGINE_URL}/health", timeout=5)
         health_data = json.loads(req.read().decode())
-        check_assert(req.status == 200, f"Backend HTTP status {req.status}")
+        check_assert(req.status == 200, f"Engine HTTP status {req.status}")
         check_assert(health_data.get("status") == "ok", f"Health status: {health_data.get('status')}")
         check_assert("deterministic-ast-dag" in health_data.get("runtime", ""), "Runtime engine verified")
     except Exception as e:
-        print(f"  [FAIL] Could not connect to backend at {BACKEND_URL}: {e}")
+        print(f"  [FAIL] Could not connect to engine at {ENGINE_URL}: {e}")
         sys.exit(1)
 
-    # 2. Frontend check
-    log_step("2. Checking Frontend Next.js Cockpit & Landing Page")
+    # 2. Console check
+    log_step("2. Checking Cockpit Console & Landing Page")
     try:
-        req_home = urllib.request.urlopen(FRONTEND_URL, timeout=25)
+        req_home = urllib.request.urlopen(CONSOLE_URL, timeout=25)
         check_assert(req_home.status == 200, f"Landing Page HTTP {req_home.status}")
-        req_cockpit = urllib.request.urlopen(f"{FRONTEND_URL}/cockpit", timeout=25)
+        req_cockpit = urllib.request.urlopen(f"{CONSOLE_URL}/cockpit", timeout=25)
         check_assert(req_cockpit.status == 200, f"Cockpit Dashboard HTTP {req_cockpit.status}")
     except Exception as e:
-        print(f"  [FAIL] Could not connect to frontend at {FRONTEND_URL}: {e}")
+        print(f"  [FAIL] Could not connect to console at {CONSOLE_URL}: {e}")
         sys.exit(1)
 
     # 3. Graph Dependency Engine

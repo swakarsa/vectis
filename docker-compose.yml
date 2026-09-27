@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  backend:
+  engine:
     build:
-      context: ./backend
+      context: ./engine
       dockerfile: Dockerfile
-    container_name: vectis-backend
+    container_name: vectis-engine
     ports:
       - "8000:8000"
     environment:
@@ -23,16 +23,17 @@ services:
       retries: 3
     restart: unless-stopped
 
-  frontend:
+  console:
     build:
-      context: ./frontend
+      context: ./console
       dockerfile: Dockerfile
-    container_name: vectis-frontend
+    container_name: vectis-console
     ports:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
-      backend:
+      engine:
         condition: service_healthy
     restart: unless-stopped
+

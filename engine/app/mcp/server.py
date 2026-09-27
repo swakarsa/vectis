@@ -5,10 +5,10 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-# Ensure the backend directory is in sys.path when running this script directly
-BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
-if str(BACKEND_DIR) not in sys.path:
-    sys.path.insert(0, str(BACKEND_DIR))
+# Ensure the engine directory is in sys.path when running this script directly
+ENGINE_DIR = Path(__file__).resolve().parent.parent.parent
+if str(ENGINE_DIR) not in sys.path:
+    sys.path.insert(0, str(ENGINE_DIR))
 
 try:
     from mcp.server.fastmcp import FastMCP, Context

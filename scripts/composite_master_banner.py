@@ -245,8 +245,8 @@ def create_master_banner():
         "d:/vectis/assets/vectis-cover-banner.png",
         "d:/vectis/assets/vectis-hero-banner-16x9.jpg",
         "d:/vectis/assets/vectis-cover-banner-1920x1080.jpg",
-        "d:/vectis/frontend/public/vectis-hero-banner-16x9.png",
-        "d:/vectis/frontend/public/hero-banner.png",
+        "d:/vectis/console/public/vectis-hero-banner-16x9.png",
+        "d:/vectis/console/public/hero-banner.png",
     ]
     for target in save_targets:
         if target.endswith(".jpg"):

@@ -1,12 +1,12 @@
 """
-backend/tests/test_cli_and_sarif_and_crawler.py
+engine/tests/test_cli_and_sarif_and_crawler.py
 ===============================================
 Comprehensive test suite for:
   1. IBMGraniteSynthesizer bidirectional Proxy `set` trap
   2. RFC 8785 HMAC-SHA256 PassportSigner and verify_signed_passport
   3. DynamicWorkspaceCrawler NetworkX monorepo dependency graph
   4. OASIS SARIF v2.1.0 compliance exporter
-  5. Developer CLI runner (backend/app/cli.py)
+  5. Developer CLI runner (engine/app/cli.py)
 """
 
 from __future__ import annotations
@@ -558,8 +558,8 @@ class TestVectisCLI:
 
     def test_auditable_code_filtering(self):
         assert is_auditable_code_file("src/auth/session.ts") is True
-        assert is_auditable_code_file("frontend/src/app/cockpit/page.tsx") is True
-        assert is_auditable_code_file("backend/tests/test_risk_scorer.py") is False
+        assert is_auditable_code_file("console/src/app/cockpit/page.tsx") is True
+        assert is_auditable_code_file("engine/tests/test_risk_scorer.py") is False
         assert is_auditable_code_file("tests/fixtures/sample.ts") is False
         assert is_auditable_code_file("node_modules/pkg/index.js") is False
         assert is_auditable_code_file("README.md") is False
@@ -569,12 +569,12 @@ class TestVectisCLI:
         engine = PCIDSSComplianceEngine()
 
         diff_with_comment = (
-            "--- a/frontend/src/cockpit.tsx\n"
-            "+++ b/frontend/src/cockpit.tsx\n"
+            "--- a/console/src/cockpit.tsx\n"
+            "+++ b/console/src/cockpit.tsx\n"
             "+ // Display PCI-DSS Req 3.4.2 CVV rule in cockpit panel\n"
             "+ const description = 'PCI-DSS v4.0.1 Req 3.4.2: PAN / CVV / Card Expiry Exposed';\n"
             "+ setGitHubCommitStatus({ token: authToken, owner: 'org' });\n"
         )
-        report = engine.audit_ast_diff("frontend/src/cockpit.tsx", diff_with_comment, [])
+        report = engine.audit_ast_diff("console/src/cockpit.tsx", diff_with_comment, [])
         assert len(report.violations) == 0
         assert report.is_blocking is False

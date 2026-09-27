@@ -1,5 +1,5 @@
 """
-backend/app/cli.py
+engine/app/cli.py
 ==================
 Developer CLI and CI/CD Runner for VECTIS
 IBM Bob 2.0 Hackathon -- Autonomous Release Safety
@@ -29,8 +29,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # Ensure app package is importable and Python stdlib 'ast' is not shadowed
 _CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-_BACKEND_DIR = os.path.dirname(_CURRENT_DIR)
-_REPO_ROOT = os.path.dirname(_BACKEND_DIR)
+_ENGINE_DIR = os.path.dirname(_CURRENT_DIR)
+_REPO_ROOT = os.path.dirname(_ENGINE_DIR)
 
 # Reconfigure standard streams to UTF-8 on Windows if needed
 if hasattr(sys.stdout, "reconfigure"):
@@ -44,7 +44,7 @@ if hasattr(sys.stdout, "reconfigure"):
 # Filter it out so 'app/ast' does not shadow Python's standard library 'ast' module.
 sys.path = [p for p in sys.path if os.path.abspath(p) != _CURRENT_DIR]
 
-for path in (_BACKEND_DIR, _REPO_ROOT):
+for path in (_ENGINE_DIR, _REPO_ROOT):
     if path not in sys.path:
         sys.path.insert(0, path)
 
@@ -578,7 +578,11 @@ echo "========================================================================="
 # Locate repository root and invoke VECTIS CLI
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
-if [ -f "$REPO_ROOT/backend/app/cli.py" ]; then
+if [ -f "$REPO_ROOT/engine/app/cli.py" ]; then
+    python "$REPO_ROOT/engine/app/cli.py" audit --repo "$REPO_ROOT"
+elif [ -d "$REPO_ROOT/engine" ]; then
+    (cd "$REPO_ROOT/engine" && python -m app.cli audit --repo "$REPO_ROOT")
+elif [ -f "$REPO_ROOT/backend/app/cli.py" ]; then
     python "$REPO_ROOT/backend/app/cli.py" audit --repo "$REPO_ROOT"
 elif [ -d "$REPO_ROOT/backend" ]; then
     (cd "$REPO_ROOT/backend" && python -m app.cli audit --repo "$REPO_ROOT")

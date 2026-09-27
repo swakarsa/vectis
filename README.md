@@ -176,10 +176,10 @@ python -m app.mcp.server --transport stdio
 * Node.js 20+ & npm
 * Git
 
-### 1. Clone & Setup Backend (Terminal 1)
+### 1. Clone & Setup Sentinel Engine (Terminal 1)
 ```bash
 git clone https://github.com/swakarsa/vectis.git
-cd vectis/backend
+cd vectis/engine
 
 # Create virtual environment
 python -m venv .venv
@@ -195,10 +195,10 @@ pytest tests/ -v
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 2. Setup Frontend Cockpit (Terminal 2)
+### 2. Setup Cockpit Console (Terminal 2)
 ```bash
 # Dari root direktori vectis:
-cd frontend
+cd console
 
 # Install dependencies
 npm install

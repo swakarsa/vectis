@@ -1,5 +1,5 @@
 """
-backend/app/granite/synthesizer.py
+engine/app/granite/synthesizer.py
 ====================================
 IBM Granite 3.0 Code Remediation Synthesizer
 VECTIS Autonomous Release Safety - IBM Bob 2.0 Hackathon

@@ -1,5 +1,5 @@
 """
-backend/app/granite/watsonx_client.py
+engine/app/granite/watsonx_client.py
 =======================================
 IBM watsonx.ai / Granite 3.0 Enterprise Client Wrapper
 VECTIS Autonomous Release Safety -- IBM Bob 2.0 Hackathon
