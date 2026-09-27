@@ -37,3 +37,15 @@ antigravity_watcher.py
 run_watcher.bat
 watcher.log
 
+# Personal automation scripts
+auto_approve_bob.py
+auto_approve*.py
+autoapprove*.py
+
+# Presentations, slide builders, and media
+*.pptx
+*.key
+*.pdf
+slides/
+assets/slides/
+
