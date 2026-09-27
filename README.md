@@ -26,7 +26,7 @@
 
 ---
 
-## 🎯 The Problem: The 02:00 AM Silent Monorepo Outage
+## The Problem: The 02:00 AM Silent Monorepo Outage
 
 In large-scale modern TypeScript monorepos, microservices and batch cron jobs import shared types across package boundaries. 
 
@@ -62,7 +62,7 @@ Vectis Sentinel operates as an autonomous, pre-merge gatekeeper sitting directly
 
 ---
 
-## 📐 System Architecture
+## System Architecture
 
 ```mermaid
 flowchart TD
@@ -99,7 +99,7 @@ flowchart TD
 
 ---
 
-## 🔬 Benchmark Case: The PR #482 Incident
+## Benchmark Case: The PR #482 Incident
 
 Vectis Sentinel includes a reproduction of a critical financial monorepo drift:
 
@@ -117,7 +117,7 @@ Vectis Sentinel includes a reproduction of a critical financial monorepo drift:
 
 ---
 
-## 🛠️ The 4 Core Pillars
+## The 4 Core Pillars
 
 ### 1. Deterministic AST & Graph Crawler
 * Ultra-fast symbol extraction without full TypeScript compiler bootstrapping; supports TypeScript (interfaces, types, union narrowing) and Python Pydantic (`BaseModel`, `TypedDict`).
@@ -151,7 +151,7 @@ Vectis Sentinel includes a reproduction of a critical financial monorepo drift:
 
 ---
 
-## 🤖 IBM Bob 2.0 FastMCP Server (Agent Mode)
+## IBM Bob 2.0 FastMCP Server (Agent Mode)
 
 Vectis implements the **Model Context Protocol (MCP)**, allowing AI agents like **IBM Bob 2.0** to inspect monorepos and trigger auto-heal remediation autonomously:
 
@@ -169,7 +169,7 @@ python -m app.mcp.server --transport stdio
 
 ---
 
-## 🚀 Quickstart & Local Installation
+## Quickstart & Local Installation
 
 ### Prerequisites
 * Python 3.11+
@@ -217,7 +217,7 @@ docker-compose up --build
 
 ---
 
-## 💻 CLI Usage
+## CLI Usage
 
 Vectis provides a deterministic command-line interface for CI/CD runners:
 
@@ -241,7 +241,7 @@ vectis-gate audit --pr 482 --repo swakarsa/vectis
 
 ---
 
-## 👥 Team & Hackathon Submission
+## Team & Hackathon Submission
 
 * **Team Name:** **swakarsa**
 * **Project Name:** **Vectis Sentinel**
