@@ -60,29 +60,33 @@ Vectis Sentinel operates as an autonomous, pre-merge gatekeeper sitting directly
 ```mermaid
 flowchart TD
     PR["GitHub Pull Request / Webhook (PR #482)"] --> INGEST["Vectis Ingestion Engine"]
-    
+
     subgraph CoreEngine ["Vectis Sentinel Deterministic Core (1.2ms)"]
-        INGEST --> AST["AST Contract Mutation Engine<br/>(Symbol Diff & Field Relocation)"]
-        AST --> DAG["NetworkX Dependency DAG Crawler<br/>(Tarjan Cycles & Multi-Hop Traversal)"]
-        DAG --> SCORER["Blast Radius Risk Scorer<br/>(Depth Decay x Criticality x Traffic)"]
-        AST --> PCI["PCI-DSS v4.0.1 & SOC2 Engine<br/>(Req 10.2.1, 3.4.2, 8.2.8)"]
+        direction TB
+        AST["AST Contract Mutation Engine<br/>(Symbol Diff & Field Relocation)"]
+        DAG["NetworkX Dependency DAG Crawler<br/>(Tarjan Cycles & Multi-Hop Traversal)"]
+        SCORER["Blast Radius Risk Scorer<br/>(Depth Decay x Criticality x Traffic)"]
+        PCI["PCI-DSS v4.0.1 Compliance Engine<br/>(Req 10.2.1, 3.4.2, 8.2.8)"]
+
+        AST --> DAG
+        DAG --> SCORER
+        AST --> PCI
     end
-    
-    SCORER --> GATE{"Risk Threshold >= 50.0?"}
-    PCI --> GATE
-    
-    GATE -- "CRITICAL HAZARD (BLOCKED)" --> NOTIFY["GitHub Checks API: Block Merge<br/>Inline PR Review Annotations"]
-    GATE -- "CRITICAL HAZARD" --> HEAL["IBM Granite 3.0 / watsonx.ai<br/>Autonomous ES6 Proxy Synthesizer"]
-    
-    HEAL --> SHIM["Synthesized Backward-Compatibility Shim<br/>(Auto-Heal PR Commit)"]
-    SHIM --> REEVAL["Re-evaluate AST & Graph"]
-    REEVAL --> GATE
-    
-    GATE -- "CLEAN PASS (Risk < 50.0)" --> PASSPORT["Cryptographic Release Passport<br/>(RFC 8785 Canonical JSON + HMAC-SHA256)"]
-    PASSPORT --> UNLOCK["GitHub Checks API: Release Pass<br/>Merge Unlocked"]
-    
-    PCI --> SARIF["OASIS SARIF v2.1.0 Report"]
+
+    INGEST --> AST
+    SCORER --> EVAL["Release Gate Decision Engine"]
+    PCI --> EVAL
+    PCI --> SARIF["OASIS SARIF v2.1.0 Exporter"]
     SARIF --> GH_SEC["GitHub Security Tab (Code Scanning)"]
+
+    EVAL -->|Hazard: Score >= 70| BLOCK["GitHub Checks API: Block Merge<br/>Inline PR Review Annotations"]
+    EVAL -->|Auto-Heal Triggered| HEAL["IBM Granite 3.0 / watsonx.ai<br/>Autonomous ES6 Proxy Synthesizer"]
+
+    HEAL --> SHIM["Synthesized Compatibility Shim<br/>(Auto-Heal PR Commit)"]
+    SHIM --> PASSPORT["Cryptographic Release Passport<br/>(RFC 8785 Canonical JSON + HMAC-SHA256)"]
+
+    EVAL -->|Safe: Score < 30| PASSPORT
+    PASSPORT --> UNLOCK["GitHub Checks API: Release Pass<br/>Merge Unlocked"]
 ```
 
 ---
