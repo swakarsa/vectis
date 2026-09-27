@@ -165,6 +165,7 @@ export default function VectisCockpitPage() {
   const [downstreamImpact, setDownstreamImpact] = useState<any[]>(BENCHMARK_DOWNSTREAM_IMPACT);
   const [shimCode, setShimCode] = useState<string>(BENCHMARK_SHIM_CODE);
   const [releasePassport, setReleasePassport] = useState<any>(null);
+  const [incidentId, setIncidentId] = useState<string | null>(null);
 
   const [mobileView, setMobileView] = useState<"canvas" | "panel">("canvas");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -215,9 +216,40 @@ export default function VectisCockpitPage() {
     [setNodes, setEdges]
   );
 
-  // Initial load: mount
+  // Initial load: mount & read incident parameters from terminal push
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const inc = sp.get("incident");
+      if (inc) {
+        setIncidentId(inc);
+        const risk = sp.get("risk");
+        if (risk) {
+          const num = parseFloat(risk);
+          if (!isNaN(num)) setRiskScore(num);
+        }
+        const repo = sp.get("repo");
+        if (repo) {
+          setRepoName(repo);
+        }
+        // Gracefully hydrate from Engine if backend is online
+        fetch(`${API_BASE}/api/incidents/${inc}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
+            if (data && data.risk_score) {
+              setRiskScore(data.risk_score);
+              if (data.mutations && data.mutations.length > 0) {
+                setBreakingChanges(data.mutations);
+              }
+              if (data.downstream_impact && data.downstream_impact.length > 0) {
+                setDownstreamImpact(data.downstream_impact);
+              }
+            }
+          })
+          .catch(() => {});
+      }
+    }
   }, []);
 
   // Dynamically synchronize canvas DAG with the selected repository
@@ -914,6 +946,31 @@ export default function VectisCockpitPage() {
 
   return (
     <div className="h-[100dvh] w-screen flex flex-col bg-[#08090a] overflow-hidden select-none">
+      {/* Terminal Pre-Push Incident Banner */}
+      {incidentId && (
+        <div className="h-8 bg-rose-950/90 border-b border-rose-500/40 px-4 flex items-center justify-between text-xs shrink-0 backdrop-blur-md z-30">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+            <span className="font-semibold text-rose-300">Terminal Pre-Push Blocked:</span>
+            <code className="text-white bg-rose-900/60 px-1.5 py-0.5 rounded-[3px] border border-rose-500/30 text-[11px]">
+              {incidentId}
+            </code>
+            <span className="text-zinc-400 hidden md:inline">
+              — Blast radius captured from Git hook. Ready for 1-Click Auto-Heal.
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-rose-400 font-bold tabular-nums">Risk: {riskScore.toFixed(1)} / 100</span>
+            <button
+              onClick={() => setIncidentId(null)}
+              className="text-zinc-400 hover:text-white text-[11px] underline cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Header */}
       <CockpitHeader
         verdict={verdict}

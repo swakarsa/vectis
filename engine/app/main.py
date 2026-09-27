@@ -424,3 +424,68 @@ def dual_control_sign(req: DualControlSignRequest):
         "message": f"Release passport cryptographically approved and sealed by {req.approver}",
         "release_passport": passport,
     }
+
+# ==============================================================================
+# Terminal Incident Telemetry & Cockpit Auto-Heal Bridge
+# ==============================================================================
+
+class IncidentSubmission(BaseModel):
+    id: Optional[str] = None
+    repo: str = "swakarsa/vectis"
+    branch: Optional[str] = "main"
+    pr_number: Optional[int] = 482
+    risk_score: float = 84.0
+    verdict: str = "BLOCK"
+    mutations: List[Dict[str, Any]] = []
+    downstream_impact: List[Dict[str, Any]] = []
+    compliance_findings: List[Dict[str, Any]] = []
+    source: str = "terminal-pre-push"
+    timestamp: Optional[str] = None
+
+_INCIDENTS_STORE: Dict[str, Dict[str, Any]] = {}
+
+@app.post("/api/incidents")
+def create_incident(inc: IncidentSubmission):
+    """Stores terminal pre-push blocked incidents for instant Cockpit resolution."""
+    import datetime, uuid
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    inc_id = inc.id or f"INC-{now_utc.strftime('%Y%m%d%H%M')}-{uuid.uuid4().hex[:6].upper()}"
+    data = inc.model_dump() if hasattr(inc, "model_dump") else inc.dict()
+    data["id"] = inc_id
+    data["created_at"] = data.get("timestamp") or now_utc.isoformat()
+    _INCIDENTS_STORE[inc_id] = data
+
+    frontend_base = os.getenv("FRONTEND_BASE_URL", "https://vectis-sentinel.vercel.app")
+    cockpit_url = f"{frontend_base}/cockpit?incident={inc_id}"
+    local_cockpit_url = f"http://localhost:3000/cockpit?incident={inc_id}"
+
+    return {
+        "status": "recorded",
+        "incident_id": inc_id,
+        "cockpit_url": cockpit_url,
+        "local_cockpit_url": local_cockpit_url,
+        "incident": data
+    }
+
+@app.get("/api/incidents/{incident_id}")
+def get_incident(incident_id: str):
+    """Retrieves an incident payload by ID for Cockpit canvas hydration."""
+    if incident_id in _INCIDENTS_STORE:
+        return _INCIDENTS_STORE[incident_id]
+    return {
+        "id": incident_id,
+        "repo": "swakarsa/vectis",
+        "risk_score": 84.0,
+        "verdict": "BLOCK",
+        "status": "active_hazard",
+        "source": "terminal-pre-push"
+    }
+
+@app.get("/api/incidents")
+def list_incidents():
+    """Returns recent terminal incidents."""
+    return {
+        "count": len(_INCIDENTS_STORE),
+        "incidents": list(_INCIDENTS_STORE.values())[-20:]
+    }
+

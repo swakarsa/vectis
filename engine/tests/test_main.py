@@ -126,3 +126,28 @@ def test_dual_control_sign_endpoint():
     assert data["release_passport"]["passport_hash"].startswith("hmac-sha256:")
     assert data["release_passport"]["governance_state"] == "APPROVED"
 
+def test_incident_submission_and_retrieval():
+    payload = {
+        "id": "INC-TEST-001",
+        "repo": "swakarsa/vectis",
+        "risk_score": 88.5,
+        "verdict": "BLOCK",
+        "mutations": [{"symbol": "User.id", "type": "breaking"}],
+        "downstream_impact": [{"file": "payments/checkout.ts"}],
+    }
+    post_res = client.post("/api/incidents", json=payload)
+    assert post_res.status_code == 200
+    post_data = post_res.json()
+    assert post_data["status"] == "recorded"
+    assert post_data["incident_id"] == "INC-TEST-001"
+    assert "cockpit?incident=INC-TEST-001" in post_data["cockpit_url"]
+    assert "localhost:3000/cockpit?incident=INC-TEST-001" in post_data["local_cockpit_url"]
+
+    get_res = client.get("/api/incidents/INC-TEST-001")
+    assert get_res.status_code == 200
+    get_data = get_res.json()
+    assert get_data["id"] == "INC-TEST-001"
+    assert get_data["risk_score"] == 88.5
+    assert get_data["verdict"] == "BLOCK"
+
+

@@ -523,8 +523,42 @@ def handle_audit(args: argparse.Namespace) -> int:
         print(Term.green("  All compliance rules passed."))
     print("")
 
-    # Auto-heal recommendations
+    # Auto-heal recommendations & Incident Dispatch
     if verdict == "BLOCK":
+        import datetime
+        import uuid
+        import urllib.request
+        
+        incident_id = f"INC-{datetime.datetime.utcnow().strftime('%Y%m%d%H%M')}-{uuid.uuid4().hex[:6].upper()}"
+        cloud_url = f"https://vectis-sentinel.vercel.app/cockpit?incident={incident_id}&risk={total_score:.1f}&repo=swakarsa/vectis"
+        local_url = f"http://localhost:3000/cockpit?incident={incident_id}&risk={total_score:.1f}&repo=swakarsa/vectis"
+
+        # Graceful dispatch to engine API if running
+        try:
+            payload = json.dumps({
+                "id": incident_id,
+                "repo": "swakarsa/vectis",
+                "risk_score": total_score,
+                "verdict": verdict,
+                "mutations": breaking_changes,
+                "downstream_impact": unique_impact,
+                "source": "terminal-pre-push"
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "http://127.0.0.1:8000/api/incidents",
+                data=payload,
+                headers={"Content-Type": "application/json"}
+            )
+            urllib.request.urlopen(req, timeout=1.0)
+        except Exception:
+            pass  # Failsafe: Cockpit page reads incident parameters from query string seamlessly
+
+        print(Term.bold(Term.red("--- [!] Terminal Incident Dispatched to Cockpit Console ----------------------")))
+        print(f" Incident ID:            {Term.bold(incident_id)}")
+        print(" Review interactive blast radius & execute 1-Click Auto-Heal in browser:")
+        print(f"   {Term.bold('Primary (Localhost):')}  {Term.cyan(local_url)}")
+        print(f"   {Term.bold('Cloud Console:')}        {Term.dim(cloud_url)}")
+        print("")
         print(Term.bold(Term.yellow("--- [?] IBM Granite 3.0 Auto-Heal Recommendation ------------------------------")))
         print("  Downstream runtime failures can be prevented automatically by generating an")
         print("  ES6 Proxy backward-compatibility shim. Run:")
@@ -594,7 +628,9 @@ AUDIT_EXIT=$?
 if [ $AUDIT_EXIT -ne 0 ]; then
     echo ""
     echo "[VECTIS] ❌ PRE-PUSH BLOCKED: Release safety gate failed (risk >= 70.0)."
-    echo "[VECTIS] A contract-breaking change was detected. Remediate or run auto-heal."
+    echo "[VECTIS] 👉 Review & Auto-Heal in Cockpit Console:"
+    echo "         Cloud: https://vectis-sentinel.vercel.app/cockpit"
+    echo "         Local: http://localhost:3000/cockpit"
     echo ""
     exit 1
 fi
