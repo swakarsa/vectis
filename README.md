@@ -69,7 +69,6 @@ flowchart TD
     PR["GitHub Pull Request / Webhook (PR #482)"] --> INGEST["Vectis Ingestion Engine"]
 
     subgraph CoreEngine ["Vectis Sentinel Deterministic Core (1.2ms)"]
-        direction TB
         AST["AST Contract Mutation Engine<br/>(Symbol Diff & Field Relocation)"]
         DAG["NetworkX Dependency DAG Crawler<br/>(Tarjan Cycles & Multi-Hop Traversal)"]
         SCORER["Blast Radius Risk Scorer<br/>(Depth Decay x Criticality x Traffic)"]
@@ -86,16 +85,16 @@ flowchart TD
     PCI --> SARIF["OASIS SARIF v2.1.0 Exporter"]
     SARIF --> GH_SEC["GitHub Security Tab (Code Scanning)"]
 
-    EVAL -->|Hazard: Score >= 70| BLOCK["GitHub Checks API: Block Merge<br/>Inline PR Review Annotations"]
-    EVAL -->|Auto-Heal Triggered| HEAL["IBM Granite 3.0 / watsonx.ai<br/>Autonomous ES6 Proxy Synthesizer"]
+    EVAL -->|"Hazard: Score 70+"| BLOCK["GitHub Checks API: Block Merge<br/>Inline PR Review Annotations"]
+    EVAL -->|"Auto-Heal Active"| HEAL["IBM Granite 3.0 / watsonx.ai<br/>Autonomous ES6 Proxy Synthesizer"]
 
     HEAL --> SHIM["Synthesized Compatibility Shim<br/>(Auto-Heal PR Commit)"]
     SHIM --> PASSPORT["Cryptographic Release Passport<br/>(RFC 8785 Canonical JSON + HMAC-SHA256)"]
 
-    EVAL -->|Safe: Score < 30| PASSPORT
+    EVAL -->|"Safe: Score under 30"| PASSPORT
     PASSPORT --> UNLOCK["GitHub Checks API: Release Pass<br/>Merge Unlocked"]
 
-    style CoreEngine fill:none,stroke:#3f3f46,stroke-width:1.5px,stroke-dasharray: 4 4
+    style CoreEngine fill:none,stroke:#3f3f46,stroke-width:1.5px,stroke-dasharray:4
 ```
 
 ---
