@@ -473,7 +473,7 @@ export default function KeynoteSlidesPage() {
                     <ul className="text-[11px] text-zinc-300 space-y-1">
                       <li>• Saturation: <code>100*(1-exp(-R/55))</code></li>
                       <li>• Monorepo Density factor: <code>1.0+min(1.5*ratio, 1.25)</code></li>
-                      <li>• 0% prompt injection: CWE-94 regex</li>
+                      <li>• Adversarial safety: CWE-94 regex isolation</li>
                     </ul>
                   </div>
                 </div>

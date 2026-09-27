@@ -669,21 +669,22 @@ def _rule_injection_surface(
 ) -> list[ComplianceViolation]:
     """PCI REQ-6.2.4 -- Prompt-injection / CWE-94 patterns in diff content.
 
-    Scans the full diff text (both added and context lines) for strings that
-    attempt to manipulate the AI review pipeline -- prompt-injection attacks
-    embedded in code comments, string literals, or commit messages.
+    Scans added diff lines for strings that attempt to manipulate the AI review
+    pipeline -- prompt-injection attacks embedded in code comments, string
+    literals, or commit messages.
     """
     if _is_test_path(ctx.file_path):
         return []
 
     violations: list[ComplianceViolation] = []
+    scan_text = "\n".join(ctx.added_lines) if ctx.added_lines else ctx.diff_text
 
     for pattern in _RE_INJECTION_PATTERNS:
-        m = pattern.search(ctx.diff_text)
+        m = pattern.search(scan_text)
         if not m:
             continue
 
-        snippet = ctx.diff_text[max(0, m.start() - 20): m.end() + 20].strip()
+        snippet = scan_text[max(0, m.start() - 20): m.end() + 20].strip()
         vid = _make_violation_id(RULE_PCI_6_2_4, ctx.file_path, pattern.pattern[:30])
         guidance = (
             "A prompt-injection or CWE-94 pattern was detected in the diff of "
