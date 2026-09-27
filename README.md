@@ -222,18 +222,21 @@ docker-compose up --build
 Vectis provides a deterministic command-line interface for CI/CD runners:
 
 ```bash
-# Install Git pre-push release safety gate hook:
-python -m app.cli hook install
-
+# Option 1: Run directly from repository root
 # Python CLI runner (CI/CD pipeline & local git hooks):
-python -m app.cli audit --repo .
-python -m app.cli audit --repo . --diff main...HEAD
-python -m app.cli audit --repo . --sarif vectis-compliance.sarif
-python -m app.cli passport verify --file release-passport.json
+python engine/app/cli.py audit --repo .
+python engine/app/cli.py audit --repo . --diff main...HEAD
+python engine/app/cli.py audit --repo . --sarif vectis-compliance.sarif
+python engine/app/cli.py passport verify --file fixtures/sample-passport.json
+python engine/app/cli.py hook install
 
-# Node.js runner (npx distribution):
-npx vectis-gate audit --pr 482
-npx vectis-gate verify --file release-passport.json
+# Node.js runner (Local execution):
+node console/bin/vectis.js audit --pr 482 --repo swakarsa/vectis
+node console/bin/vectis.js verify --file fixtures/sample-passport.json
+
+# Option 2: Run via npx / global binary (after local link):
+cd console && npm link && cd ..
+vectis-gate audit --pr 482 --repo swakarsa/vectis
 ```
 
 ---
