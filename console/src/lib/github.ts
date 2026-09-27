@@ -34,9 +34,9 @@ export interface GitHubPullRequest {
 }
 
 export const BENCHMARK_REPO: MonorepoOption = {
-  id: "swakarsa/fintech-monorepo",
+  id: "fintech-monorepo",
   name: "fintech-monorepo",
-  fullName: "swakarsa/fintech-monorepo",
+  fullName: "fintech-monorepo",
   isBenchmark: true,
   branch: "feature/refactor-auth",
   description: "PR #482 OIDC 2.0 contract drift benchmark",
@@ -44,14 +44,6 @@ export const BENCHMARK_REPO: MonorepoOption = {
 
 export const DEFAULT_REPOS: MonorepoOption[] = [
   BENCHMARK_REPO,
-  {
-    id: "swakarsa/vectis",
-    name: "vectis",
-    fullName: "swakarsa/vectis",
-    isBenchmark: false,
-    branch: "main",
-    description: "Autonomous Release Safety & Semantic Blast-Radius Intelligence",
-  },
 ];
 
 
@@ -77,7 +69,7 @@ export interface RepoArchitecture {
 }
 
 export const REPO_ARCHITECTURES: Record<string, RepoArchitecture> = {
-  "swakarsa/fintech-monorepo": {
+  "fintech-monorepo": {
     description: "FinTech Distributed Monorepo (PR #482 OIDC 2.0 Benchmark)",
     nodes: [
       { id: "models/user.ts", label: "models/user.ts", service: "Identity Core", criticality: 1.0, traffic: 0.8, x: 320, y: 40 },
@@ -97,27 +89,8 @@ export const REPO_ARCHITECTURES: Record<string, RepoArchitecture> = {
       { source: "models/user.ts", target: "api/routes/admin_dashboard.ts" },
     ],
   },
-  "swakarsa/vectis": {
-    description: "Vectis Autonomous Release Safety & Blast-Radius Engine",
-    nodes: [
-      { id: "engine/app/main.py", label: "engine/app/main.py", service: "FastAPI Release Gate Router", criticality: 1.0, traffic: 1.0, x: 320, y: 40 },
-      { id: "engine/app/ast/analyzer.py", label: "engine/app/ast/analyzer.py", service: "Tree-sitter AST Parser", criticality: 0.95, traffic: 0.85, x: 140, y: 200 },
-      { id: "engine/app/risk/graph.py", label: "engine/app/risk/graph.py", service: "Blast-Radius DAG Engine", criticality: 0.9, traffic: 0.8, x: 140, y: 370 },
-      { id: "engine/app/risk/scorer.py", label: "engine/app/risk/scorer.py", service: "Criticality Risk Scorer", criticality: 0.85, traffic: 0.75, x: 140, y: 530 },
-      { id: "engine/app/granite/client.py", label: "engine/app/granite/client.py", service: "IBM Granite 3.0 Synthesizer", criticality: 0.95, traffic: 0.7, x: 500, y: 200 },
-      { id: "console/src/app/cockpit/page.tsx", label: "console/src/app/cockpit/page.tsx", service: "Mission Control UI", criticality: 0.8, traffic: 0.95, x: 500, y: 370 },
-      { id: "console/src/lib/github.ts", label: "console/src/lib/github.ts", service: "GitHub REST & Checks API", criticality: 0.9, traffic: 0.85, x: 500, y: 530 },
-    ],
-    edges: [
-      { source: "engine/app/main.py", target: "engine/app/ast/analyzer.py" },
-      { source: "engine/app/ast/analyzer.py", target: "engine/app/risk/graph.py" },
-      { source: "engine/app/risk/graph.py", target: "engine/app/risk/scorer.py" },
-      { source: "engine/app/main.py", target: "engine/app/granite/client.py" },
-      { source: "console/src/app/cockpit/page.tsx", target: "console/src/lib/github.ts" },
-      { source: "console/src/lib/github.ts", target: "engine/app/main.py" },
-    ],
-  },
 };
+
 
 
 /**
@@ -185,7 +158,7 @@ export async function fetchRepoArchitecture(repoFullName: string, token?: string
   }
 
   // Default fallback
-  return REPO_ARCHITECTURES["swakarsa/fintech-monorepo"];
+  return REPO_ARCHITECTURES["fintech-monorepo"];
 }
 
 /**

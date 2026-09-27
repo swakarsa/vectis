@@ -141,7 +141,7 @@ export default function VectisCockpitPage() {
 
   const [mode, setMode] = useState<"benchmark" | "live_github">("benchmark");
   const [userRepos, setUserRepos] = useState<MonorepoOption[]>(DEFAULT_REPOS);
-  const [repoName, setRepoName] = useState("swakarsa/vectis");
+  const [repoName, setRepoName] = useState("fintech-monorepo");
   const [isCustomRepo, setIsCustomRepo] = useState(false);
   const [customRepoInput, setCustomRepoInput] = useState("");
 
@@ -170,7 +170,7 @@ export default function VectisCockpitPage() {
   const [mobileView, setMobileView] = useState<"canvas" | "panel">("canvas");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  const [currentArch, setCurrentArch] = useState<RepoArchitecture>(REPO_ARCHITECTURES["swakarsa/fintech-monorepo"]);
+  const [currentArch, setCurrentArch] = useState<RepoArchitecture>(REPO_ARCHITECTURES["fintech-monorepo"]);
 
   const nodeTypes = useMemo(() => ({ blastNode: BlastNode }), []);
 
@@ -255,7 +255,7 @@ export default function VectisCockpitPage() {
   // Dynamically synchronize canvas DAG with the selected repository
   useEffect(() => {
     async function syncArchitecture() {
-      const targetRepo = mode === "benchmark" ? "swakarsa/fintech-monorepo" : repoName;
+      const targetRepo = mode === "benchmark" ? "fintech-monorepo" : repoName;
       const token = typeof window !== "undefined" ? localStorage.getItem("vectis_github_token") || undefined : undefined;
       const arch = await fetchRepoArchitecture(targetRepo, token);
       setCurrentArch(arch);
@@ -986,7 +986,7 @@ export default function VectisCockpitPage() {
           setReleasePassport(null);
           setPushedToPR(false);
           if (m === "benchmark") {
-            setRepoName("swakarsa/fintech-monorepo");
+            setRepoName("fintech-monorepo");
             setPrNumber(482);
             setHeadBranch("feature/refactor-auth");
             setHeadSha("c8a9f24e9b7d81023");
@@ -997,9 +997,10 @@ export default function VectisCockpitPage() {
             setBreakingChanges(BENCHMARK_BREAKING_CHANGES);
             setDownstreamImpact(BENCHMARK_DOWNSTREAM_IMPACT);
           } else {
-            setRepoName("swakarsa/vectis");
+            const firstConnected = userRepos.find((r) => !r.isBenchmark)?.fullName || "";
+            setRepoName(firstConnected);
             setHeadBranch("main");
-            setHeadSha("1c3573795e042a8e7f2d65c39163ef237175c214");
+            setHeadSha("");
             setVerdict("IDLE");
             setRiskScore(0.0);
             setChecksStatus("idle");
@@ -1045,6 +1046,11 @@ export default function VectisCockpitPage() {
                   }}
                   className="bg-[#14151a] border border-white/[0.08] rounded-[3px] px-2 py-0.5 text-white font-medium focus:outline-none focus:border-white/20 text-xs cursor-pointer max-w-[220px]"
                 >
+                  {!repoName && (
+                    <option value="" disabled className="bg-[#14151a] text-zinc-400">
+                      Connect GitHub or Select Repo...
+                    </option>
+                  )}
                   {userRepos.map((r) => (
                     <option key={r.id} value={r.fullName} className="bg-[#14151a] text-white">
                       {r.fullName}
