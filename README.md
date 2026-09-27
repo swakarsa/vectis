@@ -10,7 +10,7 @@
 # VECTIS SENTINEL
 ### Autonomous Release Safety & Semantic Blast-Radius Intelligence for Enterprise Monorepos
 
-[![IBM Bob 2.0 Hackathon](https://img.shields.io/badge/IBM_Bob_2.0-Hackathon_2026-052F5F?style=for-the-badge&logo=IBM&logoColor=white)](https://lablab.ai/event/ibm-bob-2-hackathon)
+[![IBM Bob 2.0](https://img.shields.io/badge/IBM_Bob_2.0-Autonomous_Agent_Mode-052F5F?style=for-the-badge&logo=IBM&logoColor=white)](#-ibm-bob-20-fastmcp-server-agent-mode)
 [![IBM Granite 3.0](https://img.shields.io/badge/IBM_Granite_3.0-watsonx.ai-1062FE?style=for-the-badge&logo=ibm&logoColor=white)](https://www.ibm.com/products/watsonx-ai)
 [![OASIS SARIF v2.1.0](https://img.shields.io/badge/OASIS_SARIF-v2.1.0_Compliant-24292e?style=for-the-badge&logo=github&logoColor=white)](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)
 [![PCI-DSS v4.0.1](https://img.shields.io/badge/PCI--DSS-v4.0.1_Audit_Ready-0D6832?style=for-the-badge)](https://www.pcisecuritystandards.org/)
