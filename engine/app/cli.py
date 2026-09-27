@@ -239,25 +239,25 @@ def write_github_step_summary(
     if not summary_file or os.getenv("GITHUB_ACTIONS") != "true":
         return
 
-    verdict_badge = "❌ **BLOCKED**" if verdict == "BLOCK" else "✅ **PASSED**"
+    verdict_badge = "**[BLOCKED]**" if verdict == "BLOCK" else "**[PASSED]**"
     score = risk.get("total_score", 0.0)
 
     lines = [
-        "# 🛡️ VECTIS Sentinel -- Release Safety & Blast Radius Report",
+        "# VECTIS Sentinel -- Release Safety & Blast Radius Report",
         "",
         f"### Verdict: {verdict_badge} &nbsp;|&nbsp; Risk Score: **`{score:.1f} / 100.0`**",
         "",
         "> **Autonomous Release Safety Gate (IBM Bob 2.0 Hackathon)**",
         "> Scans Git contract drift, maps downstream dependency blast radius, and enforces PCI-DSS v4.0.1 compliance.",
         "",
-        "### 📊 Key Metrics Summary",
+        "### Key Metrics Summary",
         "| Metric | Value | Threshold | Status |",
         "| :--- | :--- | :--- | :--- |",
-        f"| **Overall Risk Score** | `{score:.1f}` | `< 70.0` | {'🔴 Critical' if score >= 70 else '🟢 Safe'} |",
+        f"| **Overall Risk Score** | `{score:.1f}` | `< 70.0` | {'[CRITICAL]' if score >= 70 else '[SAFE]'} |",
         f"| **Blast Depth Penalty** | `{risk.get('blast_depth_score', 0.0):.1f}` | - | - |",
         f"| **Criticality Score** | `{risk.get('criticality_score', 0.0):.1f}` | - | - |",
-        f"| **Compliance Penalty** | `{risk.get('compliance_penalty', 0.0):.1f}` | `< 50.0` | {'🔴 Blocking' if risk.get('compliance_penalty', 0.0) >= 50 else '🟢 Compliant'} |",
-        f"| **Breaking Changes** | `{len(breaking_changes)}` | `0` | {'⚠️ Detected' if breaking_changes else '✅ None'} |",
+        f"| **Compliance Penalty** | `{risk.get('compliance_penalty', 0.0):.1f}` | `< 50.0` | {'[BLOCKING]' if risk.get('compliance_penalty', 0.0) >= 50 else '[COMPLIANT]'} |",
+        f"| **Breaking Changes** | `{len(breaking_changes)}` | `0` | {'[DETECTED]' if breaking_changes else '[NONE]'} |",
         f"| **Downstream Nodes Impacted** | `{len(downstream_impact)}` | - | - |",
         "",
     ]
@@ -265,7 +265,7 @@ def write_github_step_summary(
     # Breaking changes table
     if breaking_changes:
         lines.extend([
-            "### 🚨 Detected Breaking Contract Changes",
+            "### Detected Breaking Contract Changes",
             "| File | Symbol | Mutation Type | Severity | Description |",
             "| :--- | :--- | :--- | :--- | :--- |",
         ])
@@ -279,7 +279,7 @@ def write_github_step_summary(
     # Downstream impact table
     if downstream_impact:
         lines.extend([
-            "### 🌐 Blast Radius: Downstream Impacted Services",
+            "### Blast Radius: Downstream Impacted Services",
             "| Service / Node | File Path | Depth | Criticality | Traffic Weight |",
             "| :--- | :--- | :--- | :--- | :--- |",
         ])
@@ -294,7 +294,7 @@ def write_github_step_summary(
     # Compliance violations table
     if compliance_violations:
         lines.extend([
-            "### ⚖️ PCI-DSS v4.0.1 & SOC2 Compliance Violations",
+            "### PCI-DSS v4.0.1 & SOC2 Compliance Violations",
             "| Rule ID | Severity | File | Symbol | Remediation Guidance |",
             "| :--- | :--- | :--- | :--- | :--- |",
         ])
@@ -308,7 +308,7 @@ def write_github_step_summary(
         lines.append("")
 
     if sarif_path and os.path.isfile(sarif_path):
-        lines.append(f"📄 *SARIF v2.1.0 code scanning results uploaded to: `{sarif_path}`*")
+        lines.append(f"*SARIF v2.1.0 code scanning results uploaded to: `{sarif_path}`*")
         lines.append("")
 
     try:
@@ -567,7 +567,7 @@ def handle_audit(args: argparse.Namespace) -> int:
     else:
         local_pass_url = "http://localhost:3000/cockpit?verdict=PASS&repo=swakarsa/vectis"
         cloud_pass_url = "https://vectis-sentinel.vercel.app/cockpit?verdict=PASS&repo=swakarsa/vectis"
-        print(Term.bold(Term.green("--- [✓] Release Gate Cleared: Clean Architecture Passport --------------------")))
+        print(Term.bold(Term.green("--- [+] Release Gate Cleared: Clean Architecture Passport --------------------")))
         print(" Everything is safe and verified. Inspect architecture & release passport:")
         print(f"   {Term.bold('Primary (Localhost):')}  {Term.cyan(local_pass_url)}")
         print(f"   {Term.bold('Cloud Console:')}        {Term.dim(cloud_pass_url)}")
@@ -635,16 +635,16 @@ AUDIT_EXIT=$?
 
 if [ $AUDIT_EXIT -ne 0 ]; then
     echo ""
-    echo "[VECTIS] ❌ PRE-PUSH BLOCKED: Release safety gate failed (risk >= 70.0)."
-    echo "[VECTIS] 👉 Review & Auto-Heal in Cockpit Console:"
+    echo "[VECTIS] [BLOCKED] Pre-push release safety gate failed (risk >= 70.0)."
+    echo "[VECTIS] [ACTION] Review & auto-heal in Cockpit Console:"
     echo "         Primary (Localhost): http://localhost:3000/cockpit"
     echo "         Cloud Console:       https://vectis-sentinel.vercel.app/cockpit"
     echo ""
     exit 1
 fi
 
-echo "[VECTIS] ✅ Release safety audit passed. Proceeding with push."
-echo "[VECTIS] 👉 Cockpit Live View: http://localhost:3000/cockpit (Cloud: https://vectis-sentinel.vercel.app/cockpit)"
+echo "[VECTIS] [OK] Release safety audit passed. Proceeding with push."
+echo "[VECTIS] [CONSOLE] Cockpit Live View: http://localhost:3000/cockpit (Cloud: https://vectis-sentinel.vercel.app/cockpit)"
 echo ""
 exit 0
 """

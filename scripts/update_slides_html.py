@@ -260,11 +260,11 @@ HTML_CONTENT = """<!DOCTYPE html>
       background: var(--surface-card);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: clamp(14px, 1.8vh, 18px) clamp(14px, 1.8vw, 18px);
+      padding: clamp(18px, 2.2vh, 24px) clamp(20px, 2vw, 24px);
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      gap: 8px;
+      gap: 10px;
     }
 
     .bento-card-tag {
