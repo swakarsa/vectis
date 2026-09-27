@@ -31,7 +31,7 @@ import {
   setGitHubCommitStatus,
   pushAutoHealFix,
 } from "@/lib/github";
-import { ShieldWarning, ArrowsClockwise, TerminalWindow, CheckCircle, GitBranch, GitPullRequest } from "@phosphor-icons/react";
+import { ShieldWarning, ArrowsClockwise, TerminalWindow, CheckCircle, GitBranch, GitPullRequest, ArrowLeft } from "@phosphor-icons/react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -1169,7 +1169,19 @@ export default function VectisCockpitPage() {
         </div>
 
         {/* Sentry / Linear Detail Panel */}
-        <div className={`${mobileView === "canvas" ? "hidden lg:flex" : "flex"} w-full lg:w-[420px] h-full shrink-0 flex-col`}>
+        <div className={`${mobileView === "canvas" ? "hidden lg:flex" : "flex"} w-full lg:w-[420px] h-full shrink-0 flex-col relative`}>
+          {mobileView === "panel" && (
+            <div className="lg:hidden p-2.5 bg-[#090a0d] border-b border-white/[0.08] flex items-center justify-between z-10 shrink-0">
+              <button
+                onClick={() => setMobileView("canvas")}
+                className="h-9 px-3 rounded-[4px] bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <ArrowLeft size={14} weight="bold" />
+                <span>Back to Graph Canvas</span>
+              </button>
+              <span className="text-[11px] text-zinc-500 font-sans">PR #{prNumber} Details</span>
+            </div>
+          )}
           <DetailPanel
             verdict={verdict}
             riskScore={riskScore}

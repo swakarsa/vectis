@@ -411,6 +411,23 @@ class _AuditContext:
 # ---------------------------------------------------------------------------
 
 
+def _is_luhn_valid(num_str: str) -> bool:
+    """Validate Primary Account Number digits with the Luhn Mod-10 algorithm."""
+    clean = re.sub(r"\D", "", num_str)
+    if not (13 <= len(clean) <= 19):
+        return False
+    digits = [int(c) for c in clean]
+    checksum = 0
+    reverse_digits = digits[::-1]
+    for i, d in enumerate(reverse_digits):
+        if i % 2 == 1:
+            doubled = d * 2
+            checksum += (doubled - 9) if doubled > 9 else doubled
+        else:
+            checksum += d
+    return checksum % 10 == 0
+
+
 def _rule_pan_exposure(
     engine: "PCIDSSComplianceEngine",
     ctx: "_AuditContext",
@@ -419,13 +436,9 @@ def _rule_pan_exposure(
 
     Inspects added diff lines for:
     * Bare PAN-like field names without tokenization wrappers.
-    * Raw CVV / CVC field names exposed in serializable types.
+    * Raw CVV / CVC field names exposed in serializable types (strict post-auth prohibition).
     * Card expiry field names not wrapped in a vault or tokenized container.
-    * Actual digit sequences that pass a rough Luhn-range check.
-
-    A field is considered *safe* when the same line or its immediate context
-    contains a tokenization marker (e.g. ``tokenReference``, ``masked``,
-    ``encrypted``).
+    * Actual digit sequences that pass a verified Luhn Mod-10 check.
     """
     violations: list[ComplianceViolation] = []
 
@@ -434,21 +447,23 @@ def _rule_pan_exposure(
         if not stripped:
             continue
 
-        # Skip lines that already contain a tokenization wrapper
-        if _RE_TOKENIZED.search(stripped):
-            continue
-
         detected_issue: Optional[tuple[str, str]] = None  # (field_desc, severity)
 
-        if _RE_PAN_FIELD.search(stripped):
+        # 1. CVV/CVC: PCI-DSS v4.0.1 Req 3.3.1 strictly forbids post-auth retention under ANY circumstance
+        if _RE_CVV_FIELD.search(stripped):
+            detected_issue = ("CVV/CVC sensitive authentication data (prohibited post-auth)", SEVERITY_CRITICAL)
+        elif _RE_TOKENIZED.search(stripped):
+            # Safe tokenization wrapper for non-CVV payment card data
+            continue
+        elif _RE_PAN_FIELD.search(stripped):
             detected_issue = ("raw PAN / card-number field", SEVERITY_CRITICAL)
-        elif _RE_CVV_FIELD.search(stripped):
-            detected_issue = ("CVV/CVC field", SEVERITY_CRITICAL)
         elif _RE_EXPIRY_FIELD.search(stripped):
             detected_issue = ("card expiry field", SEVERITY_HIGH)
         elif _RE_PAN_RAW.search(stripped):
-            # Digit sequence that looks like a PAN
-            detected_issue = ("PAN-like digit sequence", SEVERITY_CRITICAL)
+            raw_match = _RE_PAN_RAW.search(stripped)
+            # Only flag digit sequences if they pass formal Luhn Mod-10 checksum
+            if raw_match and _is_luhn_valid(raw_match.group(0)):
+                detected_issue = ("Luhn-valid PAN digit sequence", SEVERITY_CRITICAL)
 
         if detected_issue is None:
             continue

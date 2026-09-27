@@ -525,45 +525,47 @@ export function DetailPanel({
                   </pre>
                 </div>
 
-                <button
-                  onClick={onApplyShim}
-                  disabled={shimLoading || shimApplied}
-                  className={`w-full py-2 px-3 rounded-[4px] text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    shimApplied
-                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                      : "bg-white text-black hover:bg-zinc-200"
-                  }`}
-                >
-                  {shimLoading ? (
-                    <span>Synthesizing Adapter...</span>
-                  ) : shimApplied ? (
-                    <>
-                      <Check size={14} weight="bold" />
-                      <span>Shim Verified · Risk Reduced to 12.0</span>
-                    </>
-                  ) : (
-                    <>
-                      <Cpu size={14} weight="bold" />
-                      <span>Apply IBM Granite Shim</span>
-                    </>
-                  )}
-                </button>
-
-                {shimApplied && onDownloadPassport && (
+                <div className="sticky bottom-0 bg-[#0c0d10] pt-2.5 pb-1 border-t border-white/[0.06] space-y-2 z-10">
                   <button
-                    onClick={onDownloadPassport}
-                    className="w-full py-2 px-3 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                    onClick={onApplyShim}
+                    disabled={shimLoading || shimApplied}
+                    className={`w-full py-2.5 px-3 rounded-[4px] text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      shimApplied
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                        : "bg-white text-black hover:bg-zinc-200"
+                    }`}
                   >
-                    <div className="flex items-center gap-2 truncate">
-                      <DownloadSimple size={14} weight="bold" className="shrink-0" />
-                      <span className="truncate">Download Cryptographic Release Passport</span>
-                    </div>
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-200 text-[10px] font-medium shrink-0">
-                      <ShieldCheck size={11} weight="fill" className="text-emerald-400" />
-                      <span>Certified &amp; Signed</span>
-                    </span>
+                    {shimLoading ? (
+                      <span>Synthesizing Adapter...</span>
+                    ) : shimApplied ? (
+                      <>
+                        <Check size={14} weight="bold" />
+                        <span>Shim Verified · Risk Reduced to 12.0</span>
+                      </>
+                    ) : (
+                      <>
+                        <Cpu size={14} weight="bold" />
+                        <span>Apply IBM Granite Shim</span>
+                      </>
+                    )}
                   </button>
-                )}
+
+                  {shimApplied && onDownloadPassport && (
+                    <button
+                      onClick={onDownloadPassport}
+                      className="w-full py-2 px-3 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <DownloadSimple size={14} weight="bold" className="shrink-0" />
+                        <span className="truncate">Download Cryptographic Release Passport</span>
+                      </div>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-200 text-[10px] font-medium shrink-0">
+                        <ShieldCheck size={11} weight="fill" className="text-emerald-400" />
+                        <span>Certified &amp; Signed</span>
+                      </span>
+                    </button>
+                  )}
+                </div>
               </>
             )}
           </div>

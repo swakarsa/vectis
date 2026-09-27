@@ -63,6 +63,19 @@ const repo = getArg('--repo', 'swakarsa/vectis');
 const isJson = args.includes('--json');
 const sarifFile = getArg('--sarif', null);
 
+const crypto = require('crypto');
+
+function canonicalize(obj) {
+  if (obj === null || typeof obj !== 'object') {
+    return JSON.stringify(obj);
+  }
+  if (Array.isArray(obj)) {
+    return '[' + obj.map(canonicalize).join(',') + ']';
+  }
+  const keys = Object.keys(obj).sort();
+  return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalize(obj[k])).join(',') + '}';
+}
+
 if (command === 'verify') {
   const filePath = getArg('--file', null);
   if (!filePath || !fs.existsSync(filePath)) {
@@ -73,7 +86,35 @@ if (command === 'verify') {
     const raw = fs.readFileSync(filePath, 'utf-8');
     const passport = JSON.parse(raw);
     const hash = passport.passport_hash || '';
-    if (hash.startsWith('hmac-sha256:') || hash.startsWith('sha256:')) {
+    if (!hash) {
+      console.error('[!] Cryptographic Verification FAILED: Missing passport_hash in release passport');
+      process.exit(1);
+    }
+
+    const ignoredKeys = new Set(['passport_hash', 'signature_algorithm', 'canonical_standard', 'signature']);
+    const candidateA = {};
+    for (const [k, v] of Object.entries(passport)) {
+      if (!ignoredKeys.has(k)) candidateA[k] = v;
+    }
+    const candidateB = { ...candidateA };
+    delete candidateB.attestation;
+
+    const secret = process.env.VECTIS_PASSPORT_SECRET || 'vectis-master-signing-key-2026';
+    let valid = false;
+
+    if (hash.startsWith('hmac-sha256:')) {
+      const expected = hash.replace('hmac-sha256:', '');
+      const hmacA = crypto.createHmac('sha256', secret).update(canonicalize(candidateA)).digest('hex');
+      const hmacB = crypto.createHmac('sha256', secret).update(canonicalize(candidateB)).digest('hex');
+      valid = (hmacA === expected || hmacB === expected);
+    } else if (hash.startsWith('sha256:')) {
+      const expected = hash.replace('sha256:', '');
+      const shaA = crypto.createHash('sha256').update(canonicalize(candidateA)).digest('hex');
+      const shaB = crypto.createHash('sha256').update(canonicalize(candidateB)).digest('hex');
+      valid = (shaA === expected || shaB === expected);
+    }
+
+    if (valid) {
       console.log('--------------------------------------------------');
       console.log('  RFC 8785 Cryptographic Release Passport Verified');
       console.log('--------------------------------------------------');
@@ -85,7 +126,7 @@ if (command === 'verify') {
       console.log(`  Status:      AUTHENTIC (Signature Verified)`);
       process.exit(0);
     } else {
-      console.error('[!] Cryptographic Verification FAILED: Missing or invalid passport_hash');
+      console.error('[!] Cryptographic Verification FAILED: Signature mismatch or payload tampered.');
       process.exit(1);
     }
   } catch (err) {

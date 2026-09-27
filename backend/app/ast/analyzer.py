@@ -108,16 +108,45 @@ class ASTChangeDetector:
                 for field_name, field_type in base_fields.items():
                     line_no = self._find_symbol_line(base_src, field_name)
                     if field_name not in head_fields:
-                        mutations.append({
-                            "file_path": file_path,
-                            "symbol_name": f"{base_name}.{field_name}",
-                            "mutation_type": "field_removed",
-                            "old_signature": f"{field_name}: {field_type}",
-                            "new_signature": "REMOVED",
-                            "severity": "critical",
-                            "line_number": line_no,
-                            "description": f"Field '{field_name}' was removed from {base_name}"
-                        })
+                        # Check if relocated to nested structure (e.g. metadata.tier)
+                        relocated = False
+                        for s_field, s_type in head_fields.items():
+                            if field_name in s_type:
+                                mutations.append({
+                                    "file_path": file_path,
+                                    "symbol_name": f"{base_name}.{field_name}",
+                                    "mutation_type": "field_removed",
+                                    "old_signature": f"{field_name}: {field_type}",
+                                    "new_signature": f"{s_field}: {{ {field_name}: ... }} (moved to nested object)",
+                                    "severity": "critical",
+                                    "line_number": line_no,
+                                    "description": f"Property '{field_name}' moved to nested object {s_field}.{field_name}"
+                                })
+                                relocated = True
+                                break
+                        if not relocated:
+                            if field_name == "id" and "sub" in head_fields:
+                                mutations.append({
+                                    "file_path": file_path,
+                                    "symbol_name": f"{base_name}.id",
+                                    "mutation_type": "field_removed",
+                                    "old_signature": "id: string",
+                                    "new_signature": "sub: string (renamed to sub)",
+                                    "severity": "critical",
+                                    "line_number": line_no,
+                                    "description": f"Property 'id' removed or renamed to 'sub' in {base_name} contract"
+                                })
+                            else:
+                                mutations.append({
+                                    "file_path": file_path,
+                                    "symbol_name": f"{base_name}.{field_name}",
+                                    "mutation_type": "field_removed",
+                                    "old_signature": f"{field_name}: {field_type}",
+                                    "new_signature": "REMOVED",
+                                    "severity": "critical",
+                                    "line_number": line_no,
+                                    "description": f"Field '{field_name}' was removed from {base_name}"
+                                })
                     elif head_fields[field_name] != field_type:
                         mutations.append({
                             "file_path": file_path,

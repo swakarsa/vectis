@@ -56,13 +56,12 @@ class BlastRiskCalculator:
         # Compliance penalty (e.g. PCI-DSS 10.2.1 identity continuity)
         comp_penalty = compliance_violations * 15.0
 
-        raw_total = blast_score + crit_score + comp_penalty
-        
-        # Standardize for PR #482 demo: target score 84.0 - 88.5
-        if crit_count > 0 and len(downstream_impact) > 0:
-            total = min(max(raw_total, 84.0), 96.0)
-        else:
-            total = min(raw_total, 100.0)
+        # Monorepo graph blast density factor: ratio of affected nodes over total monorepo nodes
+        repo_ratio = (len(downstream_impact) / max(total_repo_nodes, 1)) if total_repo_nodes > 0 else 0.5
+        density_multiplier = 1.0 + min(repo_ratio * 1.5, 1.25)
+
+        raw_total = (blast_score * density_multiplier) + crit_score + comp_penalty
+        total = min(max(raw_total, 0.0), 100.0)
 
         return {
             "total_score": round(total, 1),

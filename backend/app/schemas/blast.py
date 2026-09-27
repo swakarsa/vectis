@@ -73,9 +73,10 @@ class PassportSigner:
         risk_score: float,
         verdict: str,
         shim_applied: bool,
-        secret: Optional[str] = None
+        secret: Optional[str] = None,
+        attestation: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        payload = {
+        payload: Dict[str, Any] = {
             "pr_number": pr_number,
             "commit_sha": commit_sha,
             "author": author,
@@ -85,6 +86,9 @@ class PassportSigner:
             "issued_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "engine": "vectis-sentinel-v1.0"
         }
+        if attestation:
+            payload["attestation"] = attestation
+
         # RFC 8785: Canonical JSON (sorted keys, no whitespace)
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         signing_secret = secret if secret is not None else (self.secret or os.getenv("VECTIS_PASSPORT_SECRET"))
@@ -127,9 +131,11 @@ def verify_signed_passport(
         return False, "Missing or invalid 'passport_hash' in release passport"
 
     # Reconstruct canonical payload by omitting the signature / hash field and transport envelope metadata
-    ignored_keys = {"passport_hash", "signature_algorithm", "canonical_standard", "attestation", "signature"}
-    payload = {k: v for k, v in passport.items() if k not in ignored_keys}
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    ignored_keys = {"passport_hash", "signature_algorithm", "canonical_standard", "signature"}
+    candidate_a = {k: v for k, v in passport.items() if k not in ignored_keys}
+    canonical_a = json.dumps(candidate_a, sort_keys=True, separators=(",", ":"))
+    candidate_b = {k: v for k, v in candidate_a.items() if k != "attestation"}
+    canonical_b = json.dumps(candidate_b, sort_keys=True, separators=(",", ":"))
 
     active_secret = secret if secret is not None else os.getenv("VECTIS_PASSPORT_SECRET")
 
@@ -140,25 +146,40 @@ def verify_signed_passport(
                 False,
                 "Passport signed with HMAC-SHA256 but VECTIS_PASSPORT_SECRET is not configured or provided",
             )
-        computed_sig = hmac.new(
+        computed_a = hmac.new(
             active_secret.encode("utf-8"),
-            canonical.encode("utf-8"),
+            canonical_a.encode("utf-8"),
             hashlib.sha256,
         ).hexdigest()
-        if hmac.compare_digest(computed_sig, expected_sig):
+        if hmac.compare_digest(computed_a, expected_sig):
+            return True, "Valid HMAC-SHA256 cryptographic release passport signature (attestation-sealed)"
+
+        computed_b = hmac.new(
+            active_secret.encode("utf-8"),
+            canonical_b.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        if hmac.compare_digest(computed_b, expected_sig):
             return True, "Valid HMAC-SHA256 cryptographic release passport signature"
+
         return False, "Cryptographic verification failed: HMAC-SHA256 signature mismatch"
 
     elif passport_hash.startswith("sha256:"):
         expected_digest = passport_hash.split("sha256:", 1)[1]
-        computed_digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-        if hmac.compare_digest(computed_digest, expected_digest):
+        computed_a = hashlib.sha256(canonical_a.encode("utf-8")).hexdigest()
+        if hmac.compare_digest(computed_a, expected_digest):
+            return True, "Valid canonical SHA-256 release passport digest (unkeyed, attestation-sealed)"
+        computed_b = hashlib.sha256(canonical_b.encode("utf-8")).hexdigest()
+        if hmac.compare_digest(computed_b, expected_digest):
             return True, "Valid canonical SHA-256 release passport digest (unkeyed)"
         return False, "Cryptographic verification failed: SHA-256 digest mismatch"
 
     elif len(passport_hash) == 64 and all(c in "0123456789abcdefABCDEF" for c in passport_hash):
-        computed_digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-        if hmac.compare_digest(computed_digest.lower(), passport_hash.lower()):
+        computed_a = hashlib.sha256(canonical_a.encode("utf-8")).hexdigest()
+        if hmac.compare_digest(computed_a.lower(), passport_hash.lower()):
+            return True, "Valid canonical SHA-256 release passport digest"
+        computed_b = hashlib.sha256(canonical_b.encode("utf-8")).hexdigest()
+        if hmac.compare_digest(computed_b.lower(), passport_hash.lower()):
             return True, "Valid canonical SHA-256 release passport digest"
         return False, "Cryptographic verification failed: SHA-256 digest mismatch"
 
