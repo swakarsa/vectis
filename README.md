@@ -176,7 +176,7 @@ python -m app.mcp.server --transport stdio
 * Node.js 20+ & npm
 * Git
 
-### 1. Clone & Setup Backend
+### 1. Clone & Setup Backend (Terminal 1)
 ```bash
 git clone https://github.com/swakarsa/vectis.git
 cd vectis/backend
@@ -195,9 +195,10 @@ pytest tests/ -v
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 2. Setup Frontend Cockpit
+### 2. Setup Frontend Cockpit (Terminal 2)
 ```bash
-cd ../frontend
+# Dari root direktori vectis:
+cd frontend
 
 # Install dependencies
 npm install
@@ -205,7 +206,8 @@ npm install
 # Start development server
 npm run dev
 
-# Open http://localhost:3000/cockpit
+# Buka visual dashboard di browser:
+# http://localhost:3000/cockpit
 ```
 
 ### 3. Docker Compose (One-Click Launch)
