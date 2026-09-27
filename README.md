@@ -1,5 +1,12 @@
 <div align="center">
 
+<a href="https://vectis-sentinel.vercel.app/cockpit">
+  <img src="assets/vectis-readme-banner.png" alt="Vectis Sentinel - Autonomous Release Safety Engine" width="100%" />
+</a>
+
+<br/>
+<br/>
+
 # VECTIS SENTINEL
 ### Autonomous Release Safety & Semantic Blast-Radius Intelligence for Enterprise Monorepos
 
