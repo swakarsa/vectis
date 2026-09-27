@@ -66,11 +66,13 @@ def build_simple_deck():
         rr.font.color.rgb = TEXT_MUTED
 
     def add_card(slide, left, top, width, height, bg=SURFACE_CARD, border=BORDER_COLOR):
+        # Crisp subtle 3.5% corner radius to eliminate bubble corners cutting into text
         card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(left), Inches(top), Inches(width), Inches(height))
         card.fill.solid()
         card.fill.fore_color.rgb = bg
         card.line.color.rgb = border
         card.line.width = Pt(1)
+        card.adjustments[0] = 0.035
         return card
 
     # =========================================================================
@@ -95,7 +97,7 @@ def build_simple_deck():
     set_bg(s2)
     add_top_bar(s2, 2, "02 · THE $5.4B OUTAGE EPIDEMIC & MONOREPO BLINDSPOT")
 
-    tb2_head = s2.shapes.add_textbox(Inches(0.9), Inches(0.95), Inches(11.533), Inches(1.55))
+    tb2_head = s2.shapes.add_textbox(Inches(0.9), Inches(0.90), Inches(11.533), Inches(1.50))
     tf2_h = tb2_head.text_frame
     tf2_h.word_wrap = True
     tf2_h.margin_left = tf2_h.margin_top = tf2_h.margin_right = tf2_h.margin_bottom = 0
@@ -123,13 +125,19 @@ def build_simple_deck():
     r.font.size = Pt(11.5)
     r.font.color.rgb = TEXT_SECONDARY
 
-    # 3 Balanced Columns on Slide 2 (All calm titanium cards)
+    # 3 Balanced Columns on Slide 2 with LUXURIOUS 0.35" padding on all sides
     col_w = 3.65
     gap = 0.29
+    card_top = 2.60
+    card_h = 4.45
+    pad_x = 0.35
+    pad_y = 0.32
+    inner_w = col_w - (pad_x * 2)
+    inner_h = card_h - (pad_y * 2)
 
     # Col 1: Catastrophic Precedents (Numbers in Crimson Red)
-    add_card(s2, 0.9, 2.7, col_w, 4.3)
-    t1 = s2.shapes.add_textbox(Inches(1.1), Inches(2.85), Inches(col_w - 0.4), Inches(4.0))
+    add_card(s2, 0.9, card_top, col_w, card_h)
+    t1 = s2.shapes.add_textbox(Inches(0.9 + pad_x), Inches(card_top + pad_y), Inches(inner_w), Inches(inner_h))
     tf1 = t1.text_frame
     tf1.word_wrap = True
     tf1.margin_left = tf1.margin_top = tf1.margin_right = tf1.margin_bottom = 0
@@ -156,7 +164,7 @@ def build_simple_deck():
     ]
     for num, lbl, desc in c1_disasters:
         pi = tf1.add_paragraph()
-        pi.space_before = Pt(6)
+        pi.space_before = Pt(7)
         rn = pi.add_run()
         rn.text = num + "  "
         rn.font.name = "Segoe UI"
@@ -172,12 +180,13 @@ def build_simple_deck():
         rd = pi.add_run()
         rd.text = desc
         rd.font.name = "Segoe UI"
-        rd.font.size = Pt(9)
+        rd.font.size = Pt(8.8)
         rd.font.color.rgb = TEXT_SECONDARY
 
     # Col 2: The Silent Midnight Crash (PR #482)
-    add_card(s2, 0.9 + col_w + gap, 2.7, col_w, 4.3)
-    t2 = s2.shapes.add_textbox(Inches(0.9 + col_w + gap + 0.2), Inches(2.85), Inches(col_w - 0.4), Inches(4.0))
+    col2_left = 0.9 + col_w + gap
+    add_card(s2, col2_left, card_top, col_w, card_h)
+    t2 = s2.shapes.add_textbox(Inches(col2_left + pad_x), Inches(card_top + pad_y), Inches(inner_w), Inches(inner_h))
     tf2 = t2.text_frame
     tf2.word_wrap = True
     tf2.margin_left = tf2.margin_top = tf2.margin_right = tf2.margin_bottom = 0
@@ -209,18 +218,19 @@ def build_simple_deck():
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
-        rb.font.size = Pt(9.5)
+        rb.font.size = Pt(9.2)
         rb.font.bold = True
         rb.font.color.rgb = TEXT_PRIMARY
         rt = pi.add_run()
         rt.text = txt
         rt.font.name = "Segoe UI"
-        rt.font.size = Pt(9.5)
+        rt.font.size = Pt(9.2)
         rt.font.color.rgb = TEXT_SECONDARY
 
     # Col 3: Enterprise Toll & TAM
-    add_card(s2, 0.9 + (col_w + gap) * 2, 2.7, col_w, 4.3)
-    t3 = s2.shapes.add_textbox(Inches(0.9 + (col_w + gap) * 2 + 0.2), Inches(2.85), Inches(col_w - 0.4), Inches(4.0))
+    col3_left = 0.9 + (col_w + gap) * 2
+    add_card(s2, col3_left, card_top, col_w, card_h)
+    t3 = s2.shapes.add_textbox(Inches(col3_left + pad_x), Inches(card_top + pad_y), Inches(inner_w), Inches(inner_h))
     tf3 = t3.text_frame
     tf3.word_wrap = True
     tf3.margin_left = tf3.margin_top = tf3.margin_right = tf3.margin_bottom = 0
@@ -258,13 +268,13 @@ def build_simple_deck():
         rl = pi.add_run()
         rl.text = lbl + " — "
         rl.font.name = "Segoe UI"
-        rl.font.size = Pt(9.5)
+        rl.font.size = Pt(9.2)
         rl.font.bold = True
         rl.font.color.rgb = TEXT_PRIMARY
         rd = pi.add_run()
         rd.text = desc
         rd.font.name = "Segoe UI"
-        rd.font.size = Pt(8.8)
+        rd.font.size = Pt(8.5)
         rd.font.color.rgb = TEXT_SECONDARY
 
     # =========================================================================
@@ -274,7 +284,7 @@ def build_simple_deck():
     set_bg(s3)
     add_top_bar(s3, 3, "03 · TWO-TIER DECOUPLED ARCHITECTURE")
 
-    tb3_head = s3.shapes.add_textbox(Inches(0.9), Inches(0.95), Inches(11.533), Inches(1.55))
+    tb3_head = s3.shapes.add_textbox(Inches(0.9), Inches(0.90), Inches(11.533), Inches(1.50))
     tf3_h = tb3_head.text_frame
     tf3_h.word_wrap = True
     tf3_h.margin_left = tf3_h.margin_top = tf3_h.margin_right = tf3_h.margin_bottom = 0
@@ -302,9 +312,14 @@ def build_simple_deck():
     r.font.size = Pt(11.5)
     r.font.color.rgb = TEXT_SECONDARY
 
-    # Left: Tier 1 Deterministic Engine
-    add_card(s3, 0.9, 2.7, 5.62, 3.6)
-    tb_t1 = s3.shapes.add_textbox(Inches(1.15), Inches(2.9), Inches(5.12), Inches(3.2))
+    # Left: Tier 1 Deterministic Engine (Generous 0.35" padding)
+    s3_card_w = 5.62
+    s3_card_h = 3.65
+    s3_inner_w = s3_card_w - (pad_x * 2)
+    s3_inner_h = s3_card_h - (pad_y * 2)
+
+    add_card(s3, 0.9, card_top, s3_card_w, s3_card_h)
+    tb_t1 = s3.shapes.add_textbox(Inches(0.9 + pad_x), Inches(card_top + pad_y), Inches(s3_inner_w), Inches(s3_inner_h))
     tft1 = tb_t1.text_frame
     tft1.word_wrap = True
     tft1.margin_left = tft1.margin_top = tft1.margin_right = tft1.margin_bottom = 0
@@ -335,18 +350,19 @@ def build_simple_deck():
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
-        rb.font.size = Pt(10)
+        rb.font.size = Pt(9.5)
         rb.font.bold = True
         rb.font.color.rgb = TEXT_PRIMARY
         rt = pi.add_run()
         rt.text = txt
         rt.font.name = "Segoe UI"
-        rt.font.size = Pt(10)
+        rt.font.size = Pt(9.5)
         rt.font.color.rgb = TEXT_SECONDARY
 
     # Right: Tier 2 FastMCP Granite 3.0
-    add_card(s3, 6.81, 2.7, 5.62, 3.6)
-    tb_t2 = s3.shapes.add_textbox(Inches(7.06), Inches(2.9), Inches(5.12), Inches(3.2))
+    s3_right_left = 0.9 + s3_card_w + gap
+    add_card(s3, s3_right_left, card_top, s3_card_w, s3_card_h)
+    tb_t2 = s3.shapes.add_textbox(Inches(s3_right_left + pad_x), Inches(card_top + pad_y), Inches(s3_inner_w), Inches(s3_inner_h))
     tft2 = tb_t2.text_frame
     tft2.word_wrap = True
     tft2.margin_left = tft2.margin_top = tft2.margin_right = tft2.margin_bottom = 0
@@ -377,18 +393,18 @@ def build_simple_deck():
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
-        rb.font.size = Pt(10)
+        rb.font.size = Pt(9.5)
         rb.font.bold = True
         rb.font.color.rgb = TEXT_PRIMARY
         rt = pi.add_run()
         rt.text = txt
         rt.font.name = "Segoe UI"
-        rt.font.size = Pt(10)
+        rt.font.size = Pt(9.5)
         rt.font.color.rgb = TEXT_SECONDARY
 
-    # Bottom Economics Strip (Calm stealth card)
-    add_card(s3, 0.9, 6.45, 11.533, 0.8)
-    tb_eco = s3.shapes.add_textbox(Inches(1.15), Inches(6.52), Inches(11.033), Inches(0.65))
+    # Bottom Economics Strip (Comfortable padding)
+    add_card(s3, 0.9, 6.42, 11.533, 0.72)
+    tb_eco = s3.shapes.add_textbox(Inches(1.20), Inches(6.56), Inches(10.933), Inches(0.45))
     tfeco = tb_eco.text_frame
     tfeco.word_wrap = True
     tfeco.margin_left = tfeco.margin_top = tfeco.margin_right = tfeco.margin_bottom = 0
@@ -397,20 +413,20 @@ def build_simple_deck():
     r1 = pe.add_run()
     r1.text = "The Battlefield: "
     r1.font.name = "Segoe UI"
-    r1.font.size = Pt(10)
+    r1.font.size = Pt(9.5)
     r1.font.bold = True
     r1.font.color.rgb = TEXT_TITLE
 
     r2 = pe.add_run()
     r2.text = "Naive LLM Sweeps burn 450,000 tokens ($4.50/PR) with 38s latency & hallucinations   |   "
     r2.font.name = "Segoe UI"
-    r2.font.size = Pt(9.5)
+    r2.font.size = Pt(9.2)
     r2.font.color.rgb = TEXT_SECONDARY
 
     r3 = pe.add_run()
     r3.text = "Vectis Hybrid: 0 tokens on triage (1.2ms) · 1,200 Granite tokens ($0.003) · 99.9% cost reduction · 100% deterministic"
     r3.font.name = "Segoe UI"
-    r3.font.size = Pt(9.5)
+    r3.font.size = Pt(9.2)
     r3.font.bold = True
     r3.font.color.rgb = TEXT_PRIMARY
 
@@ -421,7 +437,7 @@ def build_simple_deck():
     set_bg(s4)
     add_top_bar(s4, 4, "04 · REMEDIATION & GOVERNANCE")
 
-    tb4_head = s4.shapes.add_textbox(Inches(0.9), Inches(0.95), Inches(11.533), Inches(1.55))
+    tb4_head = s4.shapes.add_textbox(Inches(0.9), Inches(0.90), Inches(11.533), Inches(1.50))
     tf4_h = tb4_head.text_frame
     tf4_h.word_wrap = True
     tf4_h.margin_left = tf4_h.margin_top = tf4_h.margin_right = tf4_h.margin_bottom = 0
@@ -449,9 +465,9 @@ def build_simple_deck():
     r.font.size = Pt(11.5)
     r.font.color.rgb = TEXT_SECONDARY
 
-    # Left: Dual-Layer Auto-Healing Loop
-    add_card(s4, 0.9, 2.7, 5.62, 3.6)
-    tb_h1 = s4.shapes.add_textbox(Inches(1.15), Inches(2.9), Inches(5.12), Inches(3.2))
+    # Left: Dual-Layer Auto-Healing Loop (Generous 0.35" padding)
+    add_card(s4, 0.9, card_top, s3_card_w, s3_card_h)
+    tb_h1 = s4.shapes.add_textbox(Inches(0.9 + pad_x), Inches(card_top + pad_y), Inches(s3_inner_w), Inches(s3_inner_h))
     tfh1 = tb_h1.text_frame
     tfh1.word_wrap = True
     tfh1.margin_left = tfh1.margin_top = tfh1.margin_right = tfh1.margin_bottom = 0
@@ -482,18 +498,18 @@ def build_simple_deck():
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
-        rb.font.size = Pt(10)
+        rb.font.size = Pt(9.5)
         rb.font.bold = True
         rb.font.color.rgb = TEXT_PRIMARY
         rt = pi.add_run()
         rt.text = txt
         rt.font.name = "Segoe UI"
-        rt.font.size = Pt(10)
+        rt.font.size = Pt(9.5)
         rt.font.color.rgb = TEXT_SECONDARY
 
     # Right: Zero-Trust Cryptographic Admission Gate
-    add_card(s4, 6.81, 2.7, 5.62, 3.6)
-    tb_h2 = s4.shapes.add_textbox(Inches(7.06), Inches(2.9), Inches(5.12), Inches(3.2))
+    add_card(s4, s3_right_left, card_top, s3_card_w, s3_card_h)
+    tb_h2 = s4.shapes.add_textbox(Inches(s3_right_left + pad_x), Inches(card_top + pad_y), Inches(s3_inner_w), Inches(s3_inner_h))
     tfh2 = tb_h2.text_frame
     tfh2.word_wrap = True
     tfh2.margin_left = tfh2.margin_top = tfh2.margin_right = tfh2.margin_bottom = 0
@@ -524,18 +540,18 @@ def build_simple_deck():
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
-        rb.font.size = Pt(10)
+        rb.font.size = Pt(9.5)
         rb.font.bold = True
         rb.font.color.rgb = TEXT_PRIMARY
         rt = pi.add_run()
         rt.text = txt
         rt.font.name = "Segoe UI"
-        rt.font.size = Pt(10)
+        rt.font.size = Pt(9.5)
         rt.font.color.rgb = TEXT_SECONDARY
 
     # Bottom Dual-Control Strip
-    add_card(s4, 0.9, 6.45, 11.533, 0.8)
-    tb_dc = s4.shapes.add_textbox(Inches(1.15), Inches(6.52), Inches(11.033), Inches(0.65))
+    add_card(s4, 0.9, 6.42, 11.533, 0.72)
+    tb_dc = s4.shapes.add_textbox(Inches(1.20), Inches(6.56), Inches(10.933), Inches(0.45))
     tfdc = tb_dc.text_frame
     tfdc.word_wrap = True
     tfdc.margin_left = tfdc.margin_top = tfdc.margin_right = tfdc.margin_bottom = 0
@@ -544,14 +560,14 @@ def build_simple_deck():
     r1 = pd.add_run()
     r1.text = "Dual-Control Release Sign-Off: "
     r1.font.name = "Segoe UI"
-    r1.font.size = Pt(10)
+    r1.font.size = Pt(9.5)
     r1.font.bold = True
     r1.font.color.rgb = TEXT_TITLE
 
     r2 = pd.add_run()
     r2.text = "Requires AI Sentinel compliance audit AND Human Release Manager Ed25519 signature before the passport unlocks. Kyverno / OPA enforced."
     r2.font.name = "Segoe UI"
-    r2.font.size = Pt(9.5)
+    r2.font.size = Pt(9.2)
     r2.font.color.rgb = TEXT_SECONDARY
 
     # =========================================================================
@@ -561,7 +577,7 @@ def build_simple_deck():
     set_bg(s5)
     add_top_bar(s5, 5, "05 · PRODUCT COCKPIT, ROI & VERDICT")
 
-    tb5_head = s5.shapes.add_textbox(Inches(0.9), Inches(0.95), Inches(11.533), Inches(1.55))
+    tb5_head = s5.shapes.add_textbox(Inches(0.9), Inches(0.90), Inches(11.533), Inches(1.50))
     tf5_h = tb5_head.text_frame
     tf5_h.word_wrap = True
     tf5_h.margin_left = tf5_h.margin_top = tf5_h.margin_right = tf5_h.margin_bottom = 0
@@ -589,9 +605,10 @@ def build_simple_deck():
     r.font.size = Pt(11.5)
     r.font.color.rgb = TEXT_SECONDARY
 
-    # 4 Quick Metric Cards Across Top (Calm titanium cards)
+    # 4 Quick Metric Cards Across Top (0.28" padding)
     m_w = 2.66
     m_gap = 0.297
+    m_h = 1.25
     metrics = [
         ("1.2ms", "AST DETECTION LATENCY"),
         ("84 → 12", "POST-HEAL RISK SCORE"),
@@ -600,8 +617,8 @@ def build_simple_deck():
     ]
     for i, (m_val, m_lbl) in enumerate(metrics):
         m_left = 0.9 + i * (m_w + m_gap)
-        add_card(s5, m_left, 2.7, m_w, 1.25)
-        tb_m = s5.shapes.add_textbox(Inches(m_left + 0.15), Inches(2.8), Inches(m_w - 0.3), Inches(1.05))
+        add_card(s5, m_left, card_top, m_w, m_h)
+        tb_m = s5.shapes.add_textbox(Inches(m_left + 0.25), Inches(card_top + 0.18), Inches(m_w - 0.50), Inches(m_h - 0.36))
         tfm = tb_m.text_frame
         tfm.word_wrap = True
         tfm.margin_left = tfm.margin_top = tfm.margin_right = tfm.margin_bottom = 0
@@ -609,7 +626,7 @@ def build_simple_deck():
         rv = pm.add_run()
         rv.text = m_val + "\n"
         rv.font.name = "Segoe UI"
-        rv.font.size = Pt(22)
+        rv.font.size = Pt(21)
         rv.font.bold = True
         rv.font.color.rgb = TEXT_TITLE
 
@@ -620,12 +637,16 @@ def build_simple_deck():
         rl.font.bold = True
         rl.font.color.rgb = TEXT_TAG
 
-    # Bottom Two Equal Cards (ROI & Grand Jury Verdict)
+    # Bottom Two Equal Cards (ROI & Grand Jury Verdict - Generous 0.35" padding)
     b_w = 5.62
+    b_top = 4.05
+    b_h = 3.10
+    b_inner_w = b_w - (pad_x * 2)
+    b_inner_h = b_h - (pad_y * 2)
     
     # Left: Commercial Model & CFO Payback
-    add_card(s5, 0.9, 4.15, b_w, 3.1)
-    tb_c1 = s5.shapes.add_textbox(Inches(1.15), Inches(4.3), Inches(5.12), Inches(2.75))
+    add_card(s5, 0.9, b_top, b_w, b_h)
+    tb_c1 = s5.shapes.add_textbox(Inches(0.9 + pad_x), Inches(b_top + pad_y), Inches(b_inner_w), Inches(b_inner_h))
     tfc1 = tb_c1.text_frame
     tfc1.word_wrap = True
     tfc1.margin_left = tfc1.margin_top = tfc1.margin_right = tfc1.margin_bottom = 0
@@ -656,18 +677,19 @@ def build_simple_deck():
         rb = pi.add_run()
         rb.text = "• " + bld
         rb.font.name = "Segoe UI"
-        rb.font.size = Pt(9.5)
+        rb.font.size = Pt(9.2)
         rb.font.bold = True
         rb.font.color.rgb = TEXT_PRIMARY
         rt = pi.add_run()
         rt.text = txt
         rt.font.name = "Segoe UI"
-        rt.font.size = Pt(9.5)
+        rt.font.size = Pt(9.2)
         rt.font.color.rgb = TEXT_SECONDARY
 
     # Right: Grand Jury Roast & Master Audit Verdict
-    add_card(s5, 6.81, 4.15, b_w, 3.1)
-    tb_c2 = s5.shapes.add_textbox(Inches(7.06), Inches(4.3), Inches(5.12), Inches(2.75))
+    b_right_left = 0.9 + b_w + gap
+    add_card(s5, b_right_left, b_top, b_w, b_h)
+    tb_c2 = s5.shapes.add_textbox(Inches(b_right_left + pad_x), Inches(b_top + pad_y), Inches(b_inner_w), Inches(b_inner_h))
     tfc2 = tb_c2.text_frame
     tfc2.word_wrap = True
     tfc2.margin_left = tfc2.margin_top = tfc2.margin_right = tfc2.margin_bottom = 0
@@ -705,18 +727,18 @@ def build_simple_deck():
         rb = pi.add_run()
         rb.text = bld
         rb.font.name = "Segoe UI"
-        rb.font.size = Pt(9.5)
+        rb.font.size = Pt(9.2)
         rb.font.bold = True
         rb.font.color.rgb = TEXT_PRIMARY
         rt = pi.add_run()
         rt.text = txt
         rt.font.name = "Segoe UI"
-        rt.font.size = Pt(9.5)
+        rt.font.size = Pt(9.2)
         rt.font.color.rgb = TEXT_SECONDARY
 
     out_path = os.path.abspath("docs/vectis-keynote-grand-finale.pptx")
     prs.save(out_path)
-    print(f"SUCCESS: Saved Cohesive Titanium Keynote PowerPoint to {out_path}")
+    print(f"SUCCESS: Saved Perfect Zero-Collision Titanium Keynote PowerPoint to {out_path}")
 
 if __name__ == "__main__":
     build_simple_deck()
