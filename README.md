@@ -87,6 +87,8 @@ flowchart TD
 
     EVAL -->|Safe: Score < 30| PASSPORT
     PASSPORT --> UNLOCK["GitHub Checks API: Release Pass<br/>Merge Unlocked"]
+
+    style CoreEngine fill:none,stroke:#3f3f46,stroke-width:1.5px,stroke-dasharray: 4 4
 ```
 
 ---
