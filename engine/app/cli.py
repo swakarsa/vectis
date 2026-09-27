@@ -140,6 +140,59 @@ def run_git_command(args: List[str], cwd: Optional[str] = None) -> Tuple[int, st
         return -1, "", str(e)
 
 
+def detect_current_repo_name(target_path: Optional[str] = None) -> str:
+    """
+    Dynamically resolves the active repository full name (owner/repo).
+    1. Reads environment variable VECTIS_REPO if explicitly set.
+    2. Runs `git config --get remote.origin.url` in target directory and extracts `owner/repo`.
+    3. Fallback: extracts root directory name using `git rev-parse --show-toplevel` or os.path.basename.
+    4. Fallback: "local/workspace"
+    """
+    import urllib.parse
+
+    env_repo = os.getenv("VECTIS_REPO")
+    if env_repo and env_repo.strip():
+        return env_repo.strip()
+
+    cwd = os.path.abspath(target_path) if target_path else os.getcwd()
+    if os.path.isfile(cwd):
+        cwd = os.path.dirname(cwd)
+
+    # 1. Try reading Git remote URL
+    rc, stdout, _ = run_git_command(["config", "--get", "remote.origin.url"], cwd=cwd)
+    if rc == 0 and stdout.strip():
+        url = stdout.strip()
+        # Handle SSH: git@github.com:owner/repo.git
+        if "@" in url and ":" in url:
+            parts = url.split(":", 1)[1]
+            if parts.endswith(".git"):
+                parts = parts[:-4]
+            if "/" in parts:
+                return parts.strip()
+        # Handle HTTPS: https://github.com/owner/repo.git
+        elif "://" in url:
+            parsed = urllib.parse.urlparse(url)
+            path = parsed.path.strip("/")
+            if path.endswith(".git"):
+                path = path[:-4]
+            if "/" in path:
+                return path.strip()
+
+    # 2. Try git top-level directory
+    rc, stdout, _ = run_git_command(["rev-parse", "--show-toplevel"], cwd=cwd)
+    if rc == 0 and stdout.strip():
+        top_dir = os.path.basename(os.path.normpath(stdout.strip()))
+        if top_dir:
+            return f"local/{top_dir}"
+
+    # 3. Fallback: directory name
+    dir_name = os.path.basename(os.path.normpath(cwd))
+    if dir_name:
+        return f"local/{dir_name}"
+
+    return "local/workspace"
+
+
 def is_auditable_code_file(path: str) -> bool:
     """Filter out tests, fixtures, node_modules, and non-code files."""
     norm = path.replace("\\", "/").lower()
@@ -524,20 +577,23 @@ def handle_audit(args: argparse.Namespace) -> int:
     print("")
 
     # Auto-heal recommendations & Incident Dispatch
+    active_repo = detect_current_repo_name(repo_path)
+    encoded_repo = urllib.parse.quote(active_repo, safe="")
+
     if verdict == "BLOCK":
         import datetime
         import uuid
         import urllib.request
         
         incident_id = f"INC-{datetime.datetime.utcnow().strftime('%Y%m%d%H%M')}-{uuid.uuid4().hex[:6].upper()}"
-        cloud_url = f"https://vectis-sentinel.vercel.app/cockpit?incident={incident_id}&risk={total_score:.1f}&repo=swakarsa/vectis"
-        local_url = f"http://localhost:3000/cockpit?incident={incident_id}&risk={total_score:.1f}&repo=swakarsa/vectis"
+        cloud_url = f"https://vectis-sentinel.vercel.app/cockpit?incident={incident_id}&risk={total_score:.1f}&repo={encoded_repo}"
+        local_url = f"http://localhost:3000/cockpit?incident={incident_id}&risk={total_score:.1f}&repo={encoded_repo}"
 
         # Graceful dispatch to engine API if running
         try:
             payload = json.dumps({
                 "id": incident_id,
-                "repo": "swakarsa/vectis",
+                "repo": active_repo,
                 "risk_score": total_score,
                 "verdict": verdict,
                 "mutations": breaking_changes,
@@ -555,6 +611,7 @@ def handle_audit(args: argparse.Namespace) -> int:
 
         print(Term.bold(Term.red("--- [!] Terminal Incident Dispatched to Cockpit Console ----------------------")))
         print(f" Incident ID:            {Term.bold(incident_id)}")
+        print(f" Active Repository:      {Term.bold(active_repo)}")
         print(" Review interactive blast radius & execute 1-Click Auto-Heal in browser:")
         print(f"   {Term.bold('Primary (Localhost):')}  {Term.cyan(local_url)}")
         print(f"   {Term.bold('Cloud Console:')}        {Term.dim(cloud_url)}")
@@ -565,9 +622,10 @@ def handle_audit(args: argparse.Namespace) -> int:
         print(Term.cyan("    curl -X POST http://localhost:8000/api/auto-heal"))
         print("")
     else:
-        local_pass_url = "http://localhost:3000/cockpit?verdict=PASS&repo=swakarsa/vectis"
-        cloud_pass_url = "https://vectis-sentinel.vercel.app/cockpit?verdict=PASS&repo=swakarsa/vectis"
+        local_pass_url = f"http://localhost:3000/cockpit?verdict=PASS&repo={encoded_repo}"
+        cloud_pass_url = f"https://vectis-sentinel.vercel.app/cockpit?verdict=PASS&repo={encoded_repo}"
         print(Term.bold(Term.green("--- [+] Release Gate Cleared: Clean Architecture Passport --------------------")))
+        print(f" Active Repository:      {Term.bold(active_repo)}")
         print(" Everything is safe and verified. Inspect architecture & release passport:")
         print(f"   {Term.bold('Primary (Localhost):')}  {Term.cyan(local_pass_url)}")
         print(f"   {Term.bold('Cloud Console:')}        {Term.dim(cloud_pass_url)}")

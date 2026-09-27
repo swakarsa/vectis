@@ -232,7 +232,7 @@ python -m app.cli audit --repo . --sarif vectis-compliance.sarif
 python -m app.cli passport verify --file release-passport.json
 
 # Node.js runner (npx distribution):
-npx vectis-gate audit --pr 482 --repo swakarsa/vectis
+npx vectis-gate audit --pr 482
 npx vectis-gate verify --file release-passport.json
 ```
 

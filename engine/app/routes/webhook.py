@@ -134,7 +134,7 @@ def run_github_pr_audit(
 An autonomous backward-compatibility shim is available via **IBM Granite 3.0 Code**.
 👉 [**Open Vectis Cockpit to Auto-Heal PR #{pull_number}**]({target_url})
 
-*Enforced by Vectis Autonomous Release Safety Gate · Team swakarsa*
+*Enforced by Vectis Autonomous Release Safety Gate*
 """
         client.post_pr_comment(owner, repo, pull_number, comment_body)
 

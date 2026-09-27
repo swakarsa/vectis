@@ -29,7 +29,7 @@ Commands:
 
 Options:
   --pr <number>     Target pull request number (default: 482)
-  --repo <repo>     Target repository (default: swakarsa/vectis)
+  --repo <repo>     Target repository (default: auto-detected from git or VECTIS_REPO)
   --json            Output raw JSON audit result
   --sarif <file>    Export OASIS SARIF v2.1.0 security report to file
   --file <file>     Path to release passport JSON for cryptographic verification
@@ -58,8 +58,21 @@ function getArg(flag, defaultValue) {
   return defaultValue;
 }
 
+function detectCurrentRepo() {
+  if (process.env.VECTIS_REPO) return process.env.VECTIS_REPO;
+  try {
+    const { execSync } = require('child_process');
+    const url = execSync('git config --get remote.origin.url', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+    if (url) {
+      const match = url.match(/github\.com[/:]([\w.-]+\/[\w.-]+?)(?:\.git)?$/);
+      if (match) return match[1];
+    }
+  } catch (e) {}
+  return 'vectis-sentinel/release-gate';
+}
+
 const prNumber = parseInt(getArg('--pr', '482'), 10);
-const repo = getArg('--repo', 'swakarsa/vectis');
+const repo = getArg('--repo', detectCurrentRepo());
 const isJson = args.includes('--json');
 const sarifFile = getArg('--sarif', null);
 

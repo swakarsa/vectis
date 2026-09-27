@@ -102,16 +102,16 @@ def test_cors_headers_allowed_origin():
 def test_cors_headers_preview_regex():
     response = client.get(
         "/health",
-        headers={"Origin": "https://vectis-preview-123-swakarsa.vercel.app"},
+        headers={"Origin": "https://vectis-preview-123.vercel.app"},
     )
     assert response.status_code == 200
-    assert response.headers.get("access-control-allow-origin") == "https://vectis-preview-123-swakarsa.vercel.app"
+    assert response.headers.get("access-control-allow-origin") == "https://vectis-preview-123.vercel.app"
 
 def test_dual_control_sign_endpoint():
     payload = {
         "pr_number": 482,
         "commit_sha": "c8a9f24e9b7d81023",
-        "approver": "sec-lead@swakarsa.io",
+        "approver": "sec-lead@vectis.dev",
         "risk_score": 12.0,
         "verdict": "PASS",
         "shim_applied": True,
@@ -129,7 +129,7 @@ def test_dual_control_sign_endpoint():
 def test_incident_submission_and_retrieval():
     payload = {
         "id": "INC-TEST-001",
-        "repo": "swakarsa/vectis",
+        "repo": "vectis-sentinel/release-gate",
         "risk_score": 88.5,
         "verdict": "BLOCK",
         "mutations": [{"symbol": "User.id", "type": "breaking"}],

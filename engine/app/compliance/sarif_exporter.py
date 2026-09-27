@@ -331,7 +331,7 @@ class SARIFExporter:
                             "name": self.tool_name,
                             "version": self.tool_version,
                             "semanticVersion": self.tool_version,
-                            "informationUri": "https://github.com/swakarsa/vectis",
+                            "informationUri": "https://github.com/vectis-sentinel/vectis",
                             "rules": rules_list,
                         }
                     },

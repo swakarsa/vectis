@@ -105,10 +105,10 @@ export const GitHubAuthButton: React.FC = () => {
   const handleInstantTeamConnect = () => {
     const teamUser: GitHubUser = {
       id: 9948201,
-      login: "swakarsa",
-      name: "Swakarsa Enterprise",
-      avatar_url: "https://avatars.githubusercontent.com/u/9948201?v=4",
-      html_url: "https://github.com/swakarsa",
+      login: "vectis-evaluator",
+      name: "Sandbox Evaluator",
+      avatar_url: "/logo-white.png",
+      html_url: "https://github.com",
     };
     setUser(teamUser);
     localStorage.setItem("vectis_github_user", JSON.stringify(teamUser));
@@ -187,23 +187,23 @@ export const GitHubAuthButton: React.FC = () => {
                 Connect your GitHub account to let VECTIS intercept your Pull Requests in real time, block breaking contract mutations, and push auto-heal shims.
               </p>
 
-              {/* Quick 1-Click Connect (Team Account) */}
+              {/* Quick 1-Click Sandbox Connect */}
               <div className="p-3 bg-[#14151b] border border-emerald-500/20 rounded-[4px] space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
                     <ShieldCheck size={14} />
-                    <span>1-Click Team Account</span>
+                    <span>1-Click Sandbox Evaluator</span>
                   </div>
-                  <span className="text-[10px] text-zinc-500 tabular-nums font-sans">swakarsa</span>
+                  <span className="text-[10px] text-zinc-500 tabular-nums font-sans">demo</span>
                 </div>
                 <p className="text-[11px] text-zinc-400">
-                  Instant connection for testing with the official team identity and sample repositories.
+                  Instant connection for evaluation with the benchmark PR #482 simulation environment.
                 </p>
                 <button
                   onClick={handleInstantTeamConnect}
                   className="w-full py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-medium rounded-[4px] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <span>Connect as @swakarsa</span>
+                  <span>Connect as @vectis-evaluator</span>
                   <ArrowRight size={13} />
                 </button>
               </div>

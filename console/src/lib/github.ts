@@ -14,14 +14,29 @@ export interface GitHubUser {
   html_url: string;
 }
 
-export interface MonorepoOption {
-  id: string;
-  name: string;
-  fullName: string;
-  isBenchmark: boolean;
-  branch: string;
-  description: string;
-}
+import {
+  ArchitectureNode,
+  ArchitectureEdge,
+  RepoArchitecture,
+  MonorepoOption,
+  BENCHMARK_REPO,
+  DEFAULT_REPOS,
+  BENCHMARK_ARCHITECTURE,
+  REPO_ARCHITECTURES,
+} from "@/fixtures/benchmark";
+
+export type {
+  ArchitectureNode,
+  ArchitectureEdge,
+  RepoArchitecture,
+  MonorepoOption,
+};
+export {
+  BENCHMARK_REPO,
+  DEFAULT_REPOS,
+  BENCHMARK_ARCHITECTURE,
+  REPO_ARCHITECTURES,
+};
 
 export interface GitHubPullRequest {
   number: number;
@@ -32,64 +47,6 @@ export interface GitHubPullRequest {
   state: "open" | "closed";
   author: string;
 }
-
-export const BENCHMARK_REPO: MonorepoOption = {
-  id: "fintech-monorepo",
-  name: "fintech-monorepo",
-  fullName: "fintech-monorepo",
-  isBenchmark: true,
-  branch: "feature/refactor-auth",
-  description: "PR #482 OIDC 2.0 contract drift benchmark",
-};
-
-export const DEFAULT_REPOS: MonorepoOption[] = [
-  BENCHMARK_REPO,
-];
-
-
-export interface ArchitectureNode {
-  id: string;
-  label: string;
-  service: string;
-  criticality: number;
-  traffic: number;
-  x: number;
-  y: number;
-}
-
-export interface ArchitectureEdge {
-  source: string;
-  target: string;
-}
-
-export interface RepoArchitecture {
-  nodes: ArchitectureNode[];
-  edges: ArchitectureEdge[];
-  description: string;
-}
-
-export const REPO_ARCHITECTURES: Record<string, RepoArchitecture> = {
-  "fintech-monorepo": {
-    description: "FinTech Distributed Monorepo (PR #482 OIDC 2.0 Benchmark)",
-    nodes: [
-      { id: "models/user.ts", label: "models/user.ts", service: "Identity Core", criticality: 1.0, traffic: 0.8, x: 320, y: 40 },
-      { id: "auth/session.ts", label: "auth/session.ts", service: "Auth Gateway", criticality: 0.95, traffic: 0.9, x: 320, y: 190 },
-      { id: "payments/checkout.ts", label: "payments/checkout.ts", service: "Billing & Checkout", criticality: 1.0, traffic: 1.0, x: 120, y: 360 },
-      { id: "workers/settlement_worker.ts", label: "workers/settlement_worker.ts", service: "Settlement Cron", criticality: 0.85, traffic: 0.6, x: 520, y: 360 },
-      { id: "reporting/invoice_generator.ts", label: "reporting/invoice_generator.ts", service: "Invoicing", criticality: 0.7, traffic: 0.3, x: 120, y: 530 },
-      { id: "api/routes/user_profile.ts", label: "api/routes/user_profile.ts", service: "Public API", criticality: 0.5, traffic: 0.7, x: 740, y: 360 },
-      { id: "api/routes/admin_dashboard.ts", label: "api/routes/admin_dashboard.ts", service: "Internal Ops", criticality: 0.6, traffic: 0.4, x: 740, y: 190 },
-    ],
-    edges: [
-      { source: "models/user.ts", target: "auth/session.ts" },
-      { source: "auth/session.ts", target: "payments/checkout.ts" },
-      { source: "auth/session.ts", target: "workers/settlement_worker.ts" },
-      { source: "payments/checkout.ts", target: "reporting/invoice_generator.ts" },
-      { source: "auth/session.ts", target: "api/routes/user_profile.ts" },
-      { source: "models/user.ts", target: "api/routes/admin_dashboard.ts" },
-    ],
-  },
-};
 
 
 
@@ -160,54 +117,72 @@ export async function fetchRepoArchitecture(
   try {
     // 2. Resolve default branch
     let targetBranch = branch;
-    if (!targetBranch) {
-      try {
-        const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
-        if (repoRes.ok) {
-          const repoData = await repoRes.json();
-          targetBranch = repoData.default_branch;
+    let repoDefaultBranch = "main";
+    try {
+      const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+      if (repoRes.ok) {
+        const repoData = await repoRes.json();
+        if (repoData.default_branch) {
+          repoDefaultBranch = repoData.default_branch;
         }
-      } catch {
-        // Fallback
       }
+    } catch {
+      // Fallback
     }
-    targetBranch = targetBranch || "main";
+
+    if (!targetBranch || targetBranch === "feature/refactor-auth") {
+      targetBranch = repoDefaultBranch;
+    }
 
     // 3. Fetch git tree recursively
     let treeItems: any[] = [];
-    try {
-      let treeRes = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(targetBranch)}?recursive=1`,
-        { headers }
-      );
-      if (!treeRes.ok && targetBranch !== "master") {
-        treeRes = await fetch(
-          `https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`,
+    const candidateBranches = Array.from(new Set([targetBranch, repoDefaultBranch, "main", "master"].filter(Boolean)));
+
+    for (const b of candidateBranches) {
+      try {
+        const treeRes = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(b)}?recursive=1`,
           { headers }
         );
-        if (treeRes.ok) targetBranch = "master";
-      }
-      if (treeRes.ok) {
-        const data = await treeRes.json();
-        treeItems = data.tree || [];
-      }
-    } catch {
-      // Ignore
-    }
-
-    // 4. Fallback to /contents if git/trees returned nothing
-    if (treeItems.length === 0) {
-      try {
-        const contentsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`, { headers });
-        if (contentsRes.ok) {
-          const contents = await contentsRes.json();
-          if (Array.isArray(contents)) {
-            treeItems = contents.map((c: any) => ({
-              path: c.path || c.name,
-              type: c.type === "dir" ? "tree" : "blob",
-            }));
+        if (treeRes.ok) {
+          const data = await treeRes.json();
+          if (Array.isArray(data.tree) && data.tree.length > 0) {
+            treeItems = data.tree;
+            targetBranch = b;
+            break;
           }
         }
+      } catch {
+        // Try next candidate branch
+      }
+    }
+
+    // 4. Fallback to /contents if git/trees returned nothing (e.g. tree API restriction)
+    if (treeItems.length === 0) {
+      try {
+        const fetchDirContents = async (dirPath: string = "", depth: number = 0): Promise<any[]> => {
+          if (depth > 2) return [];
+          const url = dirPath
+            ? `https://api.github.com/repos/${owner}/${repo}/contents/${dirPath}?ref=${encodeURIComponent(targetBranch)}`
+            : `https://api.github.com/repos/${owner}/${repo}/contents?ref=${encodeURIComponent(targetBranch)}`;
+          const contentsRes = await fetch(url, { headers });
+          if (!contentsRes.ok) return [];
+          const contents = await contentsRes.json();
+          if (!Array.isArray(contents)) return [];
+          const results: any[] = [];
+          for (const item of contents) {
+            results.push({
+              path: item.path || item.name,
+              type: item.type === "dir" ? "tree" : "blob",
+            });
+            if (item.type === "dir" && !item.name.startsWith(".") && item.name !== "node_modules") {
+              const subItems = await fetchDirContents(item.path || item.name, depth + 1);
+              results.push(...subItems);
+            }
+          }
+          return results;
+        };
+        treeItems = await fetchDirContents();
       } catch {
         // Ignore
       }

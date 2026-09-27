@@ -85,7 +85,7 @@ export function DetailPanel({
               name: "VECTIS Sentinel",
               version: "1.0.0",
               semanticVersion: "1.0.0",
-              informationUri: "https://github.com/swakarsa/vectis",
+              informationUri: "https://github.com/vectis-sentinel/vectis",
               rules: [
                 {
                   id: "PCI-4.0.1-REQ-10.2.1",

@@ -124,8 +124,7 @@ def list_user_repositories(authorization: Optional[str] = Header(None)):
     if not authorization:
         # Fallback for unauthenticated demo
         return [
-            {"full_name": "swakarsa/vectis", "name": "vectis", "owner": "swakarsa", "default_branch": "main", "is_fixture": False},
-            {"full_name": "swakarsa/sample-fintech-monorepo", "name": "sample-fintech-monorepo", "owner": "swakarsa", "default_branch": "main", "is_fixture": True}
+            {"full_name": "fintech-monorepo", "name": "fintech-monorepo", "owner": "demo", "default_branch": "feature/refactor-auth", "is_fixture": True}
         ]
 
     headers = {

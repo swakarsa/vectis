@@ -12,6 +12,7 @@ from .schemas.blast import (
 from .compliance.pci_dss_engine import PCIDSSComplianceEngine
 from .compliance.sarif_exporter import SARIFExporter
 
+from .config import settings
 from .routes.webhook import router as webhook_router
 from .routes.github_auth import router as github_auth_router
 from .routes.remediation import router as remediation_router
@@ -30,7 +31,7 @@ app.add_middleware(
         "https://vectis-sentinel.vercel.app",
         "https://vectis.vercel.app",
     ],
-    allow_origin_regex=r"^https:\/\/vectis(-[a-zA-Z0-9_-]+)?(-swakarsa)?\.vercel\.app$",
+    allow_origin_regex=r"^https:\/\/vectis(-[a-zA-Z0-9_-]+)?\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -287,7 +288,7 @@ def defender_status():
         "webhook_endpoint": "/api/webhook/github",
         "pci_dss_engine": "IBM Docling v2.1.0 Parser Active",
         "ai_remediation_model": "IBM Granite 3.0 Code",
-        "active_defender_repo": "swakarsa/vectis",
+        "active_defender_repo": settings.DEFAULT_REPO,
         "connected_webhooks": 1
     }
 
@@ -304,7 +305,7 @@ def github_webhook(payload: Dict[str, Any]):
     repo_data = payload.get("repository", {})
     
     pr_number = pr_data.get("number", 482)
-    repo_name = repo_data.get("full_name", "swakarsa/vectis")
+    repo_name = repo_data.get("full_name", settings.DEFAULT_REPO)
     base_ref = pr_data.get("base", {}).get("ref", "main")
     head_ref = pr_data.get("head", {}).get("ref", "feature/refactor-auth")
 
@@ -336,13 +337,13 @@ def github_webhook(payload: Dict[str, Any]):
         "risk_score": risk["total_score"],
         "checks_api_status": "failure" if verdict == "BLOCK" else "success",
         "merge_button_status": "DISABLED_BY_VECTIS" if verdict == "BLOCK" else "ENABLED",
-        "remediation_cockpit_url": f"{os.getenv('FRONTEND_BASE_URL', 'https://vectis-sentinel.vercel.app')}/cockpit?repo={repo_name}&pr={pr_number}",
+        "remediation_cockpit_url": f"{settings.FRONTEND_BASE_URL}/cockpit?repo={repo_name}&pr={pr_number}",
         "breaking_changes": mutations,
         "downstream_impact": unique_impact
     }
 
 class LivePRAuditRequest(BaseModel):
-    repository: str = "swakarsa/vectis"
+    repository: str = settings.DEFAULT_REPO
     pr_number: int = 482
     base_ref: str = "main"
     head_ref: str = "feature/refactor-auth"
@@ -386,7 +387,7 @@ def live_pr_audit(req: LivePRAuditRequest):
 class DualControlSignRequest(BaseModel):
     pr_number: int = 482
     commit_sha: str = "c8a9f24e9b7d81023"
-    approver: str = "security-lead@swakarsa.io"
+    approver: str = settings.DEFAULT_APPROVER
     risk_score: float = 12.0
     verdict: str = "PASS"
     shim_applied: bool = True
@@ -431,7 +432,7 @@ def dual_control_sign(req: DualControlSignRequest):
 
 class IncidentSubmission(BaseModel):
     id: Optional[str] = None
-    repo: str = "swakarsa/vectis"
+    repo: str = settings.DEFAULT_REPO
     branch: Optional[str] = "main"
     pr_number: Optional[int] = 482
     risk_score: float = 84.0
@@ -455,7 +456,7 @@ def create_incident(inc: IncidentSubmission):
     data["created_at"] = data.get("timestamp") or now_utc.isoformat()
     _INCIDENTS_STORE[inc_id] = data
 
-    frontend_base = os.getenv("FRONTEND_BASE_URL", "https://vectis-sentinel.vercel.app")
+    frontend_base = settings.FRONTEND_BASE_URL
     cockpit_url = f"{frontend_base}/cockpit?incident={inc_id}"
     local_cockpit_url = f"http://localhost:3000/cockpit?incident={inc_id}"
 
@@ -474,7 +475,7 @@ def get_incident(incident_id: str):
         return _INCIDENTS_STORE[incident_id]
     return {
         "id": incident_id,
-        "repo": "swakarsa/vectis",
+        "repo": settings.DEFAULT_REPO,
         "risk_score": 84.0,
         "verdict": "BLOCK",
         "status": "active_hazard",
