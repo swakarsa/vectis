@@ -52,10 +52,6 @@ export function LandingNavbar() {
           <a href="#compliance" className="hover:text-zinc-200 transition-colors">
             PCI-DSS v4.0.1
           </a>
-          <Link href="/slides" className="text-zinc-300 hover:text-white transition-colors flex items-center gap-1">
-            <span>Keynote Deck</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          </Link>
           <a href="#faq" className="hover:text-zinc-200 transition-colors">
             FAQ
           </a>
@@ -63,12 +59,6 @@ export function LandingNavbar() {
 
         {/* Right: CTA to Cockpit */}
         <div className="flex items-center gap-2.5">
-          <Link
-            href="/slides"
-            className="hidden sm:flex h-8 px-3 rounded-[4px] border border-white/10 hover:border-white/20 bg-[#14151a] hover:bg-[#1a1c22] text-zinc-300 hover:text-white text-xs font-medium transition-colors items-center gap-1.5 cursor-pointer"
-          >
-            <span>Keynote</span>
-          </Link>
           <Link
             href="/cockpit"
             className="h-8 px-3.5 rounded-[4px] bg-white text-black hover:bg-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
