@@ -236,17 +236,6 @@ npx vectis-gate verify --file release-passport.json
 
 ---
 
-## 🎨 The 5 Hard Design Invariants
-
-The Vectis UI was crafted following strict enterprise developer tool standards:
-1. **Universal Non-Monospace:** Zero `font-mono`. Proportional sans-serif typography everywhere with tabular numerals (`tabular-nums font-sans`) for metrics.
-2. **Zero-Pill Geometry:** Sharp 2-4px corner radii (`rounded-[4px]` buttons/inputs/tags, `rounded-[6px]` cards/nodes, `rounded-none` gauges). Zero pill-shaped buttons.
-3. **Zero Em-Dash & Zero En-Dash:** Zero em-dashes (`—`) or en-dashes (`–`). All phrasing uses crisp colons (`:`), hyphens (`-`), or interpuncts (`·`).
-4. **100% Phosphor Icons:** Zero Lucide dependencies, zero raw emojis. Consistent iconography via `@phosphor-icons/react`.
-5. **Dark Void Palette:** True void surface (`#08090a` to `#14151a`) paired strictly with tri-color functional semantics: Hazard Red (`#ef4444`), Downstream Amber (`#f97316`), and Clear Emerald (`#10b981`).
-
----
-
 ## 👥 Team & Hackathon Submission
 
 * **Team Name:** **swakarsa**
