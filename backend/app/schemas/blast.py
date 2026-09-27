@@ -75,6 +75,8 @@ class PassportSigner:
         shim_applied: bool,
         secret: Optional[str] = None,
         attestation: Optional[Dict[str, Any]] = None,
+        governance_state: Optional[str] = None,
+        approver: Optional[str] = None,
     ) -> Dict[str, Any]:
         payload: Dict[str, Any] = {
             "pr_number": pr_number,
@@ -86,6 +88,10 @@ class PassportSigner:
             "issued_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "engine": "vectis-sentinel-v1.0"
         }
+        if governance_state:
+            payload["governance_state"] = governance_state
+        if approver:
+            payload["approver"] = approver
         if attestation:
             payload["attestation"] = attestation
 

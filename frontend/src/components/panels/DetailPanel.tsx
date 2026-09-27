@@ -26,7 +26,22 @@ interface DetailPanelProps {
   passportAvailable?: boolean;
   onExportSecurityAudit?: () => void;
   selectedNodeId?: string | null;
+  onSelectNode?: (nodeId: string) => void;
 }
+
+const BENCHMARK_CODEMOD_DIFF = `--- a/src/payments/checkout.ts
++++ b/src/payments/checkout.ts
+@@ -10,4 +10,4 @@ // VECTIS Clean Codemod Refactor (SessionUser)
+-  const userId = session.id;
+-  const userTier = session.tier;
++  const userId = session.sub; // migrated from SessionUser.id
++  const userTier = session.metadata.tier; // migrated from SessionUser.tier
+
+--- a/src/workers/settlement_worker.ts
++++ b/src/workers/settlement_worker.ts
+@@ -15,3 +15,3 @@ // VECTIS Clean Codemod Refactor (SessionUser)
+-  const principalId = user.id;
++  const principalId = user.sub; // migrated from SessionUser.id`;
 
 export function DetailPanel({
   verdict,
@@ -41,8 +56,10 @@ export function DetailPanel({
   passportAvailable,
   onExportSecurityAudit,
   selectedNodeId,
+  onSelectNode,
 }: DetailPanelProps) {
   const [activeTab, setActiveTab] = useState<"breaking" | "impact" | "shim" | "compliance">("breaking");
+  const [remediationLayer, setRemediationLayer] = useState<"shim" | "codemod">("shim");
   const [copied, setCopied] = useState(false);
 
   const copyShim = () => {
@@ -412,29 +429,39 @@ export function DetailPanel({
                 </p>
               </div>
             ) : (
-              downstreamImpact.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-[4px] border border-white/[0.08] bg-[#121318] p-3 text-xs flex items-center justify-between gap-2"
-                >
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <div className="font-semibold text-zinc-200 truncate" title={item.file_path}>
-                      {item.file_path}
+              downstreamImpact.map((item, idx) => {
+                const isSelected = selectedNodeId === item.node_id;
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => onSelectNode && onSelectNode(item.node_id)}
+                    className={`rounded-[4px] border ${
+                      isSelected
+                        ? "border-amber-400 bg-amber-500/10 shadow-[0_0_12px_rgba(245,158,11,0.15)]"
+                        : "border-white/[0.08] bg-[#121318] hover:border-white/20"
+                    } p-3 text-xs flex items-center justify-between gap-2 cursor-pointer transition-all`}
+                    title="Click to focus service in DAG canvas"
+                  >
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="font-semibold text-zinc-200 truncate flex items-center gap-1.5" title={item.file_path}>
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />}
+                        <span className="truncate">{item.file_path}</span>
+                      </div>
+                      <div className="text-[11px] text-zinc-500 truncate">
+                        {item.service || "Downstream Service"}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-zinc-500 truncate">
-                      {item.service || "Downstream Service"}
+                    <div className="text-right shrink-0">
+                      <div className="text-[10px] tabular-nums font-sans text-amber-400 font-semibold">
+                        HOP {item.dependency_depth || 1}
+                      </div>
+                      <div className="text-[10px] text-zinc-500 tabular-nums font-sans">
+                        Crit: {item.criticality || 1.0}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-[10px] tabular-nums font-sans text-amber-400 font-semibold">
-                      HOP {item.dependency_depth || 1}
-                    </div>
-                    <div className="text-[10px] text-zinc-500 tabular-nums font-sans">
-                      Crit: {item.criticality || 1.0}
-                    </div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -509,11 +536,46 @@ export function DetailPanel({
                   </div>
                 </div>
 
+                {/* Two-Tier Remediation Layer Switcher */}
+                <div className="flex border border-white/[0.08] rounded-[3px] p-0.5 bg-[#08090a] text-[11px]">
+                  <button
+                    onClick={() => setRemediationLayer("shim")}
+                    className={`flex-1 py-1 px-2 rounded-[2px] font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                      remediationLayer === "shim"
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>Layer 1: 14-Day Proxy Shim</span>
+                  </button>
+                  <button
+                    onClick={() => setRemediationLayer("codemod")}
+                    className={`flex-1 py-1 px-2 rounded-[2px] font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                      remediationLayer === "codemod"
+                        ? "bg-white/[0.12] text-white border border-white/20"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                    <span>Layer 2: Clean Codemod PR</span>
+                  </button>
+                </div>
+
                 <div className="relative border border-white/[0.08] rounded-[4px] bg-[#08090b] p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] tabular-nums font-sans text-zinc-500">auth_adapter.ts (Granite Proxy)</span>
+                    <span className="text-[10px] tabular-nums font-sans text-zinc-400">
+                      {remediationLayer === "shim" ? "auth_adapter.ts (14-Day Ephemeral Membrane)" : "clean_refactor.patch (Unified Codemod Diff)"}
+                    </span>
                     <button
-                      onClick={copyShim}
+                      onClick={() => {
+                        const textToCopy = remediationLayer === "shim" ? shimCode : BENCHMARK_CODEMOD_DIFF;
+                        if (navigator?.clipboard?.writeText) {
+                          navigator.clipboard.writeText(textToCopy).catch(() => {});
+                        }
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
                       className="text-[11px] text-zinc-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                     >
                       {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} className="text-zinc-400" />}
@@ -521,7 +583,7 @@ export function DetailPanel({
                     </button>
                   </div>
                   <pre className="text-[11px] text-zinc-300 tabular-nums font-sans overflow-x-auto max-h-36 leading-relaxed whitespace-pre">
-                    {shimCode}
+                    {remediationLayer === "shim" ? shimCode : BENCHMARK_CODEMOD_DIFF}
                   </pre>
                 </div>
 

@@ -108,7 +108,7 @@ Vectis Sentinel includes a reproduction of a critical financial monorepo drift:
 * **Breaking Mutations:**
   1. `User.id` renamed to `SessionUser.sub` (OIDC 2.0 Standard Alignment)
   2. `User.tier` moved to nested property `metadata.tier`
-* **Downstream Casualties (Blast Radius Score: 88.4 / 100 — CRITICAL HAZARD):**
+* **Downstream Casualties (Blast Radius Score: 84.0 / 100: CRITICAL HAZARD):**
   * `payments/checkout.ts` (Depth 1, Criticality 1.0, Traffic 1.0) -> Broken billing pipeline
   * `workers/settlement_worker.ts` (Depth 1, Criticality 0.85, Traffic 0.6) -> Broken midnight ACH settlement
   * `reporting/invoice_generator.ts` (Depth 2, Criticality 0.7, Traffic 0.3) -> Broken customer invoicing
@@ -151,10 +151,10 @@ Vectis implements the **Model Context Protocol (MCP)**, allowing AI agents like 
 
 | MCP Tool Name | Description | Inputs |
 |---|---|---|
-| `analyze_blast_radius` | Analyzes contract drift and returns affected downstream services | `repo_path`, `base_ref`, `head_ref` |
+| `analyze_blast_radius` | Analyzes contract drift and returns affected downstream services | `repo_path`, `base_ref`, `head_ref`, `changed_files` |
 | `synthesize_granite_shim` | Generates an ES6 Proxy compatibility adapter via IBM Granite 3.0 | `symbol`, `old_sig`, `new_sig`, `callers` |
 | `audit_pci_compliance` | Evaluates diff for PCI-DSS v4.0.1 violations | `diff_text`, `file_path` |
-| `generate_release_passport` | Issues an RFC 8785 signed release passport | `pr_number`, `repo_name`, `commit_sha` |
+| `generate_release_passport` | Issues an RFC 8785 signed release passport | `pr_number`, `commit_sha`, `author`, `risk_score`, `verdict`, `shim_applied` |
 
 Run the FastMCP server:
 ```bash
@@ -214,14 +214,14 @@ docker-compose up --build
 Vectis provides a deterministic command-line interface for CI/CD runners:
 
 ```bash
-# Audit a Pull Request against the default branch
-vectis gate audit --pr 482 --repo fintech-monorepo
+# Python CLI runner (CI/CD pipeline & local git hooks):
+python -m app.cli audit --repo . --diff main...HEAD
+python -m app.cli audit --repo . --sarif vectis-compliance.sarif
+python -m app.cli passport verify --file release-passport.json
 
-# Export OASIS SARIF v2.1.0 for GitHub Code Scanning
-vectis gate audit --pr 482 --sarif vectis-compliance.sarif
-
-# Verify an existing Cryptographic Release Passport
-vectis passport verify --file release-passport.json
+# Node.js runner (npx distribution):
+npx vectis-gate audit --pr 482 --repo swakarsa/vectis
+npx vectis-gate verify --file release-passport.json
 ```
 
 ---

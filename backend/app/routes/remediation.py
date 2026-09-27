@@ -66,7 +66,7 @@ export function createBackwardCompatibilityProxy(session: SessionUser): User {
       return Reflect.has(target, prop);
     },
     ownKeys(target) {
-      return [...Reflect.ownKeys(target), "id", "tier", "roles"];
+      return Array.from(new Set([...Reflect.ownKeys(target), "id", "tier", "roles"]));
     },
     getOwnPropertyDescriptor(target, prop) {
       if (prop === "id") {

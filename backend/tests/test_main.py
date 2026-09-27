@@ -106,3 +106,23 @@ def test_cors_headers_preview_regex():
     )
     assert response.status_code == 200
     assert response.headers.get("access-control-allow-origin") == "https://vectis-preview-123-swakarsa.vercel.app"
+
+def test_dual_control_sign_endpoint():
+    payload = {
+        "pr_number": 482,
+        "commit_sha": "c8a9f24e9b7d81023",
+        "approver": "sec-lead@swakarsa.io",
+        "risk_score": 12.0,
+        "verdict": "PASS",
+        "shim_applied": True,
+        "notes": "Audited AST mutations and verified 14-day ephemeral proxy membrane."
+    }
+    response = client.post("/api/passport/dual-control-sign", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["governance_state"] == "APPROVED"
+    assert "release_passport" in data
+    assert data["release_passport"]["passport_hash"].startswith("hmac-sha256:")
+    assert data["release_passport"]["governance_state"] == "APPROVED"
+

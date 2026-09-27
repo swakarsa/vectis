@@ -21,6 +21,10 @@ class ASTChangeDetector:
             mutations.extend(
                 self._parse_ts_contract_mutations(file_path, base_content, head_content)
             )
+        elif file_path.endswith(".py"):
+            mutations.extend(
+                self._parse_py_contract_mutations(file_path, base_content, head_content)
+            )
         return mutations
 
     def _extract_ts_interfaces(self, source: str) -> Dict[str, Dict[str, str]]:
@@ -107,6 +111,68 @@ class ASTChangeDetector:
                 return idx
         return 1
 
+    def _detect_field_rename(
+        self,
+        field_name: str,
+        field_type: str,
+        target_fields: Dict[str, str],
+        origin_fields: Dict[str, str],
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Dynamically detects if a missing field was renamed/evolved into a new field.
+        Eliminates hardcoded field heuristics by combining semantic alias clusters,
+        1-to-1 cardinality substitution, and substring homology.
+        """
+        # Newly introduced fields in target contract
+        new_fields = {k: v for k, v in target_fields.items() if k not in origin_fields}
+        if not new_fields:
+            return None
+
+        # Standard semantic identity & authorization token equivalences
+        semantic_aliases: Dict[str, Set[str]] = {
+            "id": {"sub", "subject", "uuid", "uid", "identifier", "pk", "key", "userId", "user_id"},
+            "sub": {"id", "subject", "uuid", "uid", "identifier", "pk", "key"},
+            "user_id": {"user_sub", "userId", "userUuid", "sub", "id"},
+            "userId": {"user_id", "userSub", "sub", "uuid", "id"},
+            "token": {"jwt", "authToken", "accessToken", "bearerToken"},
+            "created_at": {"createdAt", "created_time", "timestamp"},
+            "updated_at": {"updatedAt", "modified_at", "lastModified"},
+        }
+
+        # 1. Semantic alias match
+        norm_field = field_name.lower()
+        for alias_key, aliases in semantic_aliases.items():
+            if norm_field == alias_key:
+                for candidate in aliases:
+                    if candidate in new_fields:
+                        return candidate, new_fields[candidate]
+
+        # 2. Singular 1-to-1 substitution with type compatibility
+        missing_fields = [k for k in origin_fields if k not in target_fields]
+        if len(missing_fields) == 1 and len(new_fields) == 1:
+            cand_name, cand_type = next(iter(new_fields.items()))
+            if cand_type == field_type or field_type in cand_type or cand_type in field_type:
+                return cand_name, cand_type
+
+        # 3. Substring homology (e.g. accountId -> accountUuid, userTier -> tier)
+        for cand_name, cand_type in new_fields.items():
+            norm_orig = norm_field.replace("_", "")
+            norm_cand = cand_name.lower().replace("_", "")
+            if (norm_orig in norm_cand or norm_cand in norm_orig) and (cand_type == field_type or "string" in cand_type):
+                return cand_name, cand_type
+
+        return None
+
+    def _detect_union_narrowing(self, base_type: str, head_type: str) -> Optional[List[str]]:
+        """Detects if an accepted union / enum type had variants removed."""
+        if "|" in base_type and "|" in head_type:
+            base_variants = {v.strip() for v in base_type.split("|") if v.strip()}
+            head_variants = {v.strip() for v in head_type.split("|") if v.strip()}
+            removed = base_variants - head_variants
+            if removed:
+                return sorted(list(removed))
+        return None
+
     def _parse_ts_contract_mutations(
         self, file_path: str, base_src: str, head_src: str
     ) -> List[Dict[str, Any]]:
@@ -143,16 +209,18 @@ class ASTChangeDetector:
                                 relocated = True
                                 break
                         if not relocated:
-                            if field_name == "id" and "sub" in head_fields:
+                            renamed = self._detect_field_rename(field_name, field_type, head_fields, base_fields)
+                            if renamed:
+                                new_name, new_type = renamed
                                 mutations.append({
                                     "file_path": file_path,
-                                    "symbol_name": f"{base_name}.id",
+                                    "symbol_name": f"{base_name}.{field_name}",
                                     "mutation_type": "field_removed",
-                                    "old_signature": "id: string",
-                                    "new_signature": "sub: string (renamed to sub)",
+                                    "old_signature": f"{field_name}: {field_type}",
+                                    "new_signature": f"{new_name}: {new_type} (renamed to {new_name})",
                                     "severity": "critical",
                                     "line_number": line_no,
-                                    "description": f"Property 'id' removed or renamed to 'sub' in {base_name} contract"
+                                    "description": f"Property '{field_name}' removed or renamed to '{new_name}' in {base_name} contract"
                                 })
                             else:
                                 mutations.append({
@@ -166,15 +234,22 @@ class ASTChangeDetector:
                                     "description": f"Field '{field_name}' was removed from {base_name}"
                                 })
                     elif head_fields[field_name] != field_type:
+                        head_type = head_fields[field_name]
+                        narrowed = self._detect_union_narrowing(field_type, head_type)
+                        desc = (
+                            f"Union enum variants removed: {', '.join(narrowed)}"
+                            if narrowed
+                            else f"Type signature mutated from {field_type} to {head_type}"
+                        )
                         mutations.append({
                             "file_path": file_path,
                             "symbol_name": f"{base_name}.{field_name}",
                             "mutation_type": "type_change",
                             "old_signature": f"{field_name}: {field_type}",
-                            "new_signature": f"{field_name}: {head_fields[field_name]}",
+                            "new_signature": f"{field_name}: {head_type}",
                             "severity": "critical",
                             "line_number": line_no,
-                            "description": f"Type signature mutated from {field_type} to {head_fields[field_name]}"
+                            "description": desc
                         })
             else:
                 # Interface base_name is missing in head_ifaces.
@@ -196,15 +271,22 @@ class ASTChangeDetector:
                         line_no = self._find_symbol_line(base_src, field_name)
                         if field_name in successor_fields:
                             if successor_fields[field_name] != field_type:
+                                head_type = successor_fields[field_name]
+                                narrowed = self._detect_union_narrowing(field_type, head_type)
+                                desc = (
+                                    f"Union enum variants removed: {', '.join(narrowed)}"
+                                    if narrowed
+                                    else f"Type signature mutated in successor {successor_name}"
+                                )
                                 mutations.append({
                                     "file_path": file_path,
                                     "symbol_name": f"{base_name}.{field_name}",
                                     "mutation_type": "type_change",
                                     "old_signature": f"{field_name}: {field_type}",
-                                    "new_signature": f"{field_name}: {successor_fields[field_name]}",
+                                    "new_signature": f"{field_name}: {head_type}",
                                     "severity": "critical",
                                     "line_number": line_no,
-                                    "description": f"Type signature mutated in successor {successor_name}"
+                                    "description": desc
                                 })
                         else:
                             # Check if relocated to nested structure (e.g., metadata.tier)
@@ -224,17 +306,18 @@ class ASTChangeDetector:
                                     relocated = True
                                     break
                             if not relocated:
-                                # Check for identity rename (e.g., id -> sub)
-                                if field_name == "id" and "sub" in successor_fields:
+                                renamed = self._detect_field_rename(field_name, field_type, successor_fields, base_fields)
+                                if renamed:
+                                    new_name, new_type = renamed
                                     mutations.append({
                                         "file_path": file_path,
-                                        "symbol_name": f"{base_name}.id",
+                                        "symbol_name": f"{base_name}.{field_name}",
                                         "mutation_type": "field_removed",
-                                        "old_signature": "id: string",
-                                        "new_signature": "sub: string (renamed to sub)",
+                                        "old_signature": f"{field_name}: {field_type}",
+                                        "new_signature": f"{new_name}: {new_type} (renamed to {new_name})",
                                         "severity": "critical",
                                         "line_number": line_no,
-                                        "description": f"Property 'id' removed or renamed to 'sub' in {successor_name} contract"
+                                        "description": f"Property '{field_name}' removed or renamed to '{new_name}' in {successor_name} contract"
                                     })
                                 else:
                                     mutations.append({
@@ -260,6 +343,61 @@ class ASTChangeDetector:
                         "description": f"Interface {base_name} was completely removed or renamed"
                     })
 
+        return mutations
+
+    def _parse_py_contract_mutations(
+        self, file_path: str, base_src: str, head_src: str
+    ) -> List[Dict[str, Any]]:
+        """Parses Python Pydantic/TypedDict class contracts and diffs fields."""
+        def extract_py_classes(src: str) -> Dict[str, Dict[str, str]]:
+            classes: Dict[str, Dict[str, str]] = {}
+            current_cls = None
+            for line in src.splitlines():
+                cls_match = re.match(r"^class\s+(\w+)(?:\([^)]+\))?:", line.strip())
+                if cls_match:
+                    current_cls = cls_match.group(1)
+                    classes[current_cls] = {}
+                    continue
+                if current_cls and re.match(r"^\s{4}(\w+)\s*:\s*(.+)$", line):
+                    field_match = re.match(r"^\s{4}(\w+)\s*:\s*(.+)$", line)
+                    if field_match:
+                        k = field_match.group(1)
+                        v = field_match.group(2).split("=")[0].strip()
+                        classes[current_cls][k] = v
+                elif current_cls and line and not line.startswith(" ") and not line.startswith("\t"):
+                    current_cls = None
+            return classes
+
+        base_classes = extract_py_classes(base_src)
+        head_classes = extract_py_classes(head_src)
+        mutations = []
+
+        for cls_name, b_fields in base_classes.items():
+            if cls_name in head_classes:
+                h_fields = head_classes[cls_name]
+                for f_name, f_type in b_fields.items():
+                    if f_name not in h_fields:
+                        mutations.append({
+                            "file_path": file_path,
+                            "symbol_name": f"{cls_name}.{f_name}",
+                            "mutation_type": "field_removed",
+                            "old_signature": f"{f_name}: {f_type}",
+                            "new_signature": "REMOVED",
+                            "severity": "critical",
+                            "line_number": self._find_symbol_line(base_src, f_name),
+                            "description": f"Field '{f_name}' removed from Python model {cls_name}"
+                        })
+                    elif h_fields[f_name] != f_type:
+                        mutations.append({
+                            "file_path": file_path,
+                            "symbol_name": f"{cls_name}.{f_name}",
+                            "mutation_type": "type_change",
+                            "old_signature": f"{f_name}: {f_type}",
+                            "new_signature": f"{f_name}: {h_fields[f_name]}",
+                            "severity": "critical",
+                            "line_number": self._find_symbol_line(base_src, f_name),
+                            "description": f"Type signature mutated in Python model {cls_name}"
+                        })
         return mutations
 
     def _get_file_content(self, file_path: str, ref: str) -> str:
@@ -311,16 +449,18 @@ class DependencyDAGEngine:
         crawled = crawler.crawl_workspace(repo_path) if repo_path and os.path.exists(repo_path) else nx.DiGraph()
         self.graph = crawler.merge_with_fallback(crawled)
 
-        # Cycle detection and resolution: ensure graph is a valid DAG
-        if not nx.is_directed_acyclic_graph(self.graph):
+        # Non-combinatorial O(V + E) cycle resolution using iterative DFS cycle detection
+        while not nx.is_directed_acyclic_graph(self.graph):
             try:
-                cycles = list(nx.simple_cycles(self.graph))
-                for cycle in cycles:
-                    if len(cycle) >= 2:
-                        # Break the feedback edge to prevent infinite loops
-                        self.graph.remove_edge(cycle[-1], cycle[0])
-            except Exception:
-                pass
+                cycle = nx.find_cycle(self.graph, orientation="original")
+                if cycle:
+                    # Break the feedback edge to guarantee a clean DAG
+                    u, v = cycle[0][0], cycle[0][1]
+                    self.graph.remove_edge(u, v)
+                else:
+                    break
+            except (nx.NetworkXNoCycle, Exception):
+                break
 
         for node_id in self.graph.nodes():
             self._node_metadata[node_id] = dict(self.graph.nodes[node_id])

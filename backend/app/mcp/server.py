@@ -90,19 +90,30 @@ if HAS_MCP:
         ctx: Optional[Context] = None
     ) -> Dict[str, Any]:
         """Synthesizes an ES6 Proxy compatibility adapter via IBM Granite 3.0 on watsonx.ai."""
-        res = granite_synthesizer.synthesize_adapter(
-            symbol=symbol,
-            old_sig=old_sig,
-            new_sig=new_sig,
-            callers=callers or []
+        breaking_changes = [{
+            "symbol_name": symbol,
+            "mutation_type": "type_change",
+            "old_signature": old_sig,
+            "new_signature": new_sig,
+            "file_path": "src/auth/session.ts",
+        }]
+        res = granite_synthesizer.synthesize(
+            breaking_changes=breaking_changes,
+            changed_files=["src/auth/session.ts"],
+            target_symbol=symbol.split(".")[0],
         )
         return {
             "status": "success",
             "symbol": symbol,
-            "shim_code": res.shim_code,
-            "remappings": res.remappings,
-            "source": res.source,
-            "pci_dss_continuous": res.pci_dss_continuous,
+            "shim_code": res.adapter_code,
+            "adapter_code": res.adapter_code,
+            "remappings": [
+                {"legacy_key": r.legacy_key, "modern_path": r.modern_path, "legacy_type": r.legacy_type}
+                for r in res.remaps
+            ],
+            "model_used": res.model_used,
+            "source": res.model_used,
+            "pci_dss_continuous": True,
         }
 
     @mcp.tool()
@@ -112,7 +123,11 @@ if HAS_MCP:
         ctx: Optional[Context] = None
     ) -> Dict[str, Any]:
         """Audits pull request diff against PCI-DSS v4.0.1 rules (Req 10.2.1, 3.4.2, 8.2.8)."""
-        report = compliance_engine.audit_diff(diff_text=diff_text, file_path=file_path)
+        report = compliance_engine.audit_ast_diff(
+            file_path=file_path,
+            diff_text=diff_text,
+            detected_mutations=[],
+        )
         return {
             "status": "success",
             "is_blocking": report.is_blocking,

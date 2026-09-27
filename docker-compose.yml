@@ -10,12 +10,15 @@ services:
       - "8000:8000"
     environment:
       - PORT=8000
-      - IBM_WATSONX_API_KEY=${IBM_WATSONX_API_KEY:-}
-      - IBM_WATSONX_PROJECT_ID=${IBM_WATSONX_PROJECT_ID:-}
+      - WATSONX_APIKEY=${WATSONX_APIKEY:-${IBM_WATSONX_API_KEY:-}}
+      - WATSONX_PROJECT_ID=${WATSONX_PROJECT_ID:-${IBM_WATSONX_PROJECT_ID:-}}
+      - IBM_WATSONX_API_KEY=${IBM_WATSONX_API_KEY:-${WATSONX_APIKEY:-}}
+      - IBM_WATSONX_PROJECT_ID=${IBM_WATSONX_PROJECT_ID:-${WATSONX_PROJECT_ID:-}}
+      - VECTIS_PASSPORT_SECRET=${VECTIS_PASSPORT_SECRET:-vectis-master-signing-key-2026}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 3
     restart: unless-stopped

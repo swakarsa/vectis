@@ -1220,3 +1220,28 @@ class TestPCIDSSComplianceEngine:
         for v in report.violations:
             if v.rule_id == RULE_PCI_3_4_2:
                 assert "3.4.2" in v.remediation_guidance or "PCI" in v.remediation_guidance
+
+    def test_granite_synthesizer_codemod_diff(self, simple_id_rename_mutations):
+        from app.granite.synthesizer import IBMGraniteSynthesizer
+        synth = IBMGraniteSynthesizer(force_offline=True)
+        result = synth.synthesize(
+            breaking_changes=simple_id_rename_mutations,
+            changed_files=["src/payments/checkout.ts"],
+        )
+        assert result.codemod_diff != ""
+        assert "--- a/src/payments/checkout.ts" in result.codemod_diff
+        assert "+++ b/src/payments/checkout.ts" in result.codemod_diff
+        assert "migrated from deprecated" in result.codemod_diff
+
+    def test_adapter_has_ephemeral_ttl_and_deduplicated_own_keys(self, simple_id_rename_mutations):
+        from app.granite.synthesizer import IBMGraniteSynthesizer
+        synth = IBMGraniteSynthesizer(force_offline=True)
+        result = synth.synthesize(
+            breaking_changes=simple_id_rename_mutations,
+            changed_files=["src/auth/session.ts"],
+        )
+        code = result.adapter_code
+        assert "__VECTIS_TTL_DAYS = 14" in code
+        assert "Array.from(new Set(" in code
+        assert "__vectisLogDeprecation" in code
+

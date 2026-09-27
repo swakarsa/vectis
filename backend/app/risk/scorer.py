@@ -1,10 +1,13 @@
+import math
 import re
 from typing import List, Dict, Any
 
 class BlastRiskCalculator:
     """
-    Deterministic Risk Scorer for Monorepo API changes:
-    RiskScore = Σ(Depth^(-0.5) × Criticality × TrafficWeight) × 1.25 + Mutations + Compliance
+    Deterministic Continuous Asymptotic Risk Scorer for Monorepo API changes:
+    RawScore = (BlastDepthScore × DensityMultiplier) + CriticalityScore + CompliancePenalty
+    RiskScore = 100.0 × (1 - exp(-RawScore / 55.0))
+    Eliminates 100-point ceiling saturation and preserves ordinal hazard differentiation.
     Anti-Injection: CWE-94 check in diff / comments.
     """
 
@@ -17,6 +20,8 @@ class BlastRiskCalculator:
         r"(?i)<\|endoftext\|>",
         r"(?i)system\s*:\s*you\s+are",
     ]
+
+    TAU: float = 55.0  # Asymptotic saturation scale factor
 
     def compute_risk_score(
         self,
@@ -38,7 +43,7 @@ class BlastRiskCalculator:
                 "breakdown": {"CWE-94": "Prompt injection detected in code comments"},
             }
 
-        # Blast depth score calculation
+        # Blast depth score calculation with depth attenuation
         blast_score = 0.0
         for node in downstream_impact:
             depth = max(node.get("dependency_depth", 1), 1)
@@ -61,7 +66,12 @@ class BlastRiskCalculator:
         density_multiplier = 1.0 + min(repo_ratio * 1.5, 1.25)
 
         raw_total = (blast_score * density_multiplier) + crit_score + comp_penalty
-        total = min(max(raw_total, 0.0), 100.0)
+        
+        # Smooth continuous asymptotic saturation curve
+        if raw_total <= 0.0:
+            total = 0.0
+        else:
+            total = 100.0 * (1.0 - math.exp(-raw_total / self.TAU))
 
         return {
             "total_score": round(total, 1),
@@ -70,6 +80,8 @@ class BlastRiskCalculator:
             "compliance_penalty": round(comp_penalty, 1),
             "injection_flag": False,
             "breakdown": {
+                "raw_total_risk": round(raw_total, 2),
+                "asymptotic_tau": self.TAU,
                 "downstream_nodes_affected": len(downstream_impact),
                 "breaking_changes_critical": crit_count,
                 "breaking_changes_warning": warn_count,

@@ -73,15 +73,16 @@ def analyze_pr(req: AnalysisRequest):
 
     breaking_changes = []
     for fp in req.changed_files:
-        if fp.endswith((".ts", ".tsx", ".js", ".jsx")):
-            mutations = detector.detect_contract_mutations(fp, req.base_ref, req.head_ref)
-            breaking_changes.extend(mutations)
+        mutations = detector.detect_contract_mutations(fp, req.base_ref, req.head_ref)
+        breaking_changes.extend(mutations)
 
-    dag_engine.build_graph(repo_path)
+    # Request-scoped DAG engine for thread/request concurrency safety
+    req_dag = DependencyDAGEngine()
+    req_dag.build_graph(repo_path)
 
     downstream_impact = []
     for change in breaking_changes:
-        affected = dag_engine.calculate_downstream_impact(
+        affected = req_dag.calculate_downstream_impact(
             file_path=change["file_path"],
             symbol_name=change["symbol_name"]
         )
@@ -95,11 +96,15 @@ def analyze_pr(req: AnalysisRequest):
             seen.add(node["node_id"])
             unique_impact.append(node)
 
+    compliance_count = 1 if any(c.get("mutation_type") == "field_removed" for c in breaking_changes) else 0
+    if not breaking_changes:
+        compliance_count = 0
+
     risk = risk_calculator.compute_risk_score(
         breaking_changes=breaking_changes,
         downstream_impact=unique_impact,
-        total_repo_nodes=dag_engine.get_total_node_count(),
-        compliance_violations=1,
+        total_repo_nodes=req_dag.get_total_node_count(),
+        compliance_violations=compliance_count,
     )
 
     verdict = "BLOCK" if risk["total_score"] >= 70.0 else (
@@ -115,10 +120,11 @@ def analyze_pr(req: AnalysisRequest):
         "downstream_impact_count": len(unique_impact),
         "downstream_impact": unique_impact,
         "dag_metrics": {
-            "total_nodes": dag_engine.get_total_node_count(),
-            "max_impact_depth": dag_engine.get_max_depth(unique_impact),
+            "total_nodes": req_dag.get_total_node_count(),
+            "max_impact_depth": req_dag.get_max_depth(unique_impact),
         },
-        "graph_data": dag_engine.get_graph_data(),
+        "governance_state": "PENDING_REVIEW" if verdict == "BLOCK" else "APPROVED",
+        "graph_data": req_dag.get_graph_data(),
     }
 
 @app.post("/api/auto-heal")
@@ -151,7 +157,7 @@ export function createSessionUserAdapter(modernSession: any): any {
       return Reflect.has(target, prop);
     },
     ownKeys(target) {
-      return [...Reflect.ownKeys(target), "id", "tier"];
+      return Array.from(new Set([...Reflect.ownKeys(target), "id", "tier"]));
     },
     getOwnPropertyDescriptor(target, prop) {
       if (prop === "id") {
@@ -307,14 +313,15 @@ def github_webhook(payload: Dict[str, Any]):
     detector = ASTChangeDetector(repo_path=FIXTURES_PATH)
     mutations = detector.detect_contract_mutations("src/auth/session.ts", "main/src", "feature/refactor-auth/src")
     
-    dag_engine.build_graph(FIXTURES_PATH)
+    req_dag = DependencyDAGEngine()
+    req_dag.build_graph(FIXTURES_PATH)
     downstream_impact = []
     for change in mutations:
-        affected = dag_engine.calculate_downstream_impact(change["file_path"], change["symbol_name"])
+        affected = req_dag.calculate_downstream_impact(change["file_path"], change["symbol_name"])
         downstream_impact.extend(affected)
 
     unique_impact = list({node["node_id"]: node for node in downstream_impact}.values())
-    risk = risk_calculator.compute_risk_score(mutations, unique_impact, dag_engine.get_total_node_count(), 1)
+    risk = risk_calculator.compute_risk_score(mutations, unique_impact, req_dag.get_total_node_count(), 1)
     verdict = "BLOCK" if risk["total_score"] >= 70.0 else "PASS"
 
     return {
@@ -350,14 +357,15 @@ def live_pr_audit(req: LivePRAuditRequest):
         m = detector.detect_contract_mutations(f, "main/src", "feature/refactor-auth/src")
         mutations.extend(m)
 
-    dag_engine.build_graph(FIXTURES_PATH)
+    req_dag = DependencyDAGEngine()
+    req_dag.build_graph(FIXTURES_PATH)
     downstream_impact = []
     for change in mutations:
-        affected = dag_engine.calculate_downstream_impact(change["file_path"], change["symbol_name"])
+        affected = req_dag.calculate_downstream_impact(change["file_path"], change["symbol_name"])
         downstream_impact.extend(affected)
 
     unique_impact = list({node["node_id"]: node for node in downstream_impact}.values())
-    risk = risk_calculator.compute_risk_score(mutations, unique_impact, dag_engine.get_total_node_count(), 1)
+    risk = risk_calculator.compute_risk_score(mutations, unique_impact, req_dag.get_total_node_count(), 1)
     verdict = "BLOCK" if risk["total_score"] >= 70.0 else "PASS"
 
     return {
@@ -373,4 +381,46 @@ def live_pr_audit(req: LivePRAuditRequest):
         "github_checks_conclusion": "failure" if verdict == "BLOCK" else "success",
         "lock_merge": verdict == "BLOCK",
         "reason": "Contract drift broke 2 critical downstream payment & settlement services (PCI-DSS §10.2.1 violation)" if verdict == "BLOCK" else "Clean Release Passport"
+    }
+
+class DualControlSignRequest(BaseModel):
+    pr_number: int = 482
+    commit_sha: str = "c8a9f24e9b7d81023"
+    approver: str = "security-lead@swakarsa.io"
+    risk_score: float = 12.0
+    verdict: str = "PASS"
+    shim_applied: bool = True
+    notes: Optional[str] = "Dual-control authorized release after inspecting AST blast radius and PCI-DSS compliance."
+
+@app.post("/api/passport/dual-control-sign")
+def dual_control_sign(req: DualControlSignRequest):
+    """Dual-Control Cryptographic Sign-Off for Release Gate."""
+    secret = os.getenv("VECTIS_PASSPORT_SECRET", "vectis-master-signing-key-2026")
+    attestation = {
+        "signer": "vectis-sentinel-authority",
+        "dual_control_approver": req.approver,
+        "governance_state": "APPROVED",
+        "pci_dss_compliance": "REQ-10.2.1-SATISFIED",
+        "notes": req.notes,
+    }
+    passport = passport_signer.create_signed_passport(
+        pr_number=req.pr_number,
+        commit_sha=req.commit_sha,
+        author=req.approver,
+        risk_score=req.risk_score,
+        verdict=req.verdict,
+        shim_applied=req.shim_applied,
+        secret=secret,
+        attestation=attestation,
+        governance_state="APPROVED",
+        approver=req.approver,
+    )
+    passport["signature_algorithm"] = "HMAC-SHA256"
+    passport["canonical_standard"] = "RFC 8785"
+    passport["governance_state"] = "APPROVED"
+    return {
+        "status": "success",
+        "governance_state": "APPROVED",
+        "message": f"Release passport cryptographically approved and sealed by {req.approver}",
+        "release_passport": passport,
     }

@@ -314,43 +314,43 @@ class SARIFExporter:
 
             results.append(result_entry)
 
-            # Ensure endTimeUtc conforms to ISO-8601 UTC ending with 'Z'
-            utc_timestamp = report.audit_timestamp
-            if utc_timestamp.endswith("+00:00"):
-                utc_timestamp = utc_timestamp[:-6] + "Z"
-            elif not utc_timestamp.endswith("Z"):
-                utc_timestamp += "Z"
+        # Ensure endTimeUtc conforms to ISO-8601 UTC ending with 'Z'
+        utc_timestamp = report.audit_timestamp
+        if utc_timestamp.endswith("+00:00"):
+            utc_timestamp = utc_timestamp[:-6] + "Z"
+        elif not utc_timestamp.endswith("Z"):
+            utc_timestamp += "Z"
 
-            sarif_payload: Dict[str, Any] = {
-                "$schema": SARIF_SCHEMA_URI,
-                "version": SARIF_VERSION,
-                "runs": [
-                    {
-                        "tool": {
-                            "driver": {
-                                "name": self.tool_name,
-                                "version": self.tool_version,
-                                "semanticVersion": self.tool_version,
-                                "informationUri": "https://github.com/swakarsa/vectis",
-                                "rules": rules_list,
-                            }
-                        },
-                        "results": results,
-                        "invocations": [
-                            {
-                                "executionSuccessful": True,
-                                "endTimeUtc": utc_timestamp,
-                                "properties": {
-                                    "totalPenalty": report.total_penalty,
-                                    "isBlocking": report.is_blocking,
-                                    "evaluatedSymbols": report.evaluated_symbols_count,
-                                    "engineFingerprint": report.engine_fingerprint,
-                                },
-                            }
-                        ],
-                    }
-                ],
-            }
+        sarif_payload: Dict[str, Any] = {
+            "$schema": SARIF_SCHEMA_URI,
+            "version": SARIF_VERSION,
+            "runs": [
+                {
+                    "tool": {
+                        "driver": {
+                            "name": self.tool_name,
+                            "version": self.tool_version,
+                            "semanticVersion": self.tool_version,
+                            "informationUri": "https://github.com/swakarsa/vectis",
+                            "rules": rules_list,
+                        }
+                    },
+                    "results": results,
+                    "invocations": [
+                        {
+                            "executionSuccessful": True,
+                            "endTimeUtc": utc_timestamp,
+                            "properties": {
+                                "totalPenalty": report.total_penalty,
+                                "isBlocking": report.is_blocking,
+                                "evaluatedSymbols": report.evaluated_symbols_count,
+                                "engineFingerprint": report.engine_fingerprint,
+                            },
+                        }
+                    ],
+                }
+            ],
+        }
 
         return sarif_payload
 

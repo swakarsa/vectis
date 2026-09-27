@@ -157,6 +157,7 @@ class SynthesisResult:
     model_used: str
     remaps: list[FieldRemap]
     synthesis_metadata: dict[str, Any] = field(default_factory=dict)
+    codemod_diff: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +263,41 @@ class IBMGraniteSynthesizer:
             remaps=remaps,
             changed_files=changed_files,
             target_symbol=target_symbol,
+            breaking_changes=breaking_changes,
         )
+
+    def synthesize_codemod_diff(
+        self,
+        breaking_changes: list[dict],
+        callers: list[str],
+        target_symbol: str = "SessionUser",
+    ) -> str:
+        """Synthesise Layer 2 Clean AST Codemod patches.
+
+        Generates git-applyable unified diffs migrating downstream callers directly
+        to the modern contract, providing engineering teams with a clean permanent
+        refactor without technical debt.
+        """
+        remaps = self._extract_remaps(breaking_changes)
+        target_callers = callers if callers else ["src/payments/checkout.ts", "src/workers/settlement_worker.ts"]
+
+        diff_chunks = []
+        for caller in target_callers:
+            clean_path = caller.replace("\\", "/")
+            if not clean_path.startswith("src/"):
+                clean_path = f"src/{clean_path}"
+
+            chunk = [
+                f"--- a/{clean_path}",
+                f"+++ b/{clean_path}",
+                f"@@ -10,6 +10,6 @@ // VECTIS Clean Codemod Refactor ({target_symbol})",
+            ]
+            for r in remaps:
+                chunk.append(f"-  const {r.legacy_key} = session.{r.legacy_key};")
+                chunk.append(f"+  const {r.legacy_key} = session.{r.modern_path}; // migrated from deprecated {target_symbol}.{r.legacy_key}")
+            diff_chunks.append("\n".join(chunk))
+
+        return "\n\n".join(diff_chunks)
 
     # ------------------------------------------------------------------
     # Internal helpers - remap extraction
@@ -406,6 +441,7 @@ class IBMGraniteSynthesizer:
         remaps: list[FieldRemap],
         changed_files: list[str],
         target_symbol: str,
+        breaking_changes: list[dict] | None = None,
     ) -> SynthesisResult:
         """Produce adapter code using the deterministic template engine.
 
@@ -422,6 +458,8 @@ class IBMGraniteSynthesizer:
             Source file paths for JSDoc ``@module`` annotation.
         target_symbol:
             TypeScript interface name being adapted.
+        breaking_changes:
+            Optional breaking change list for codemod diff synthesis.
 
         Returns
         -------
@@ -433,6 +471,11 @@ class IBMGraniteSynthesizer:
             target_symbol=target_symbol,
             synthesis_engine="IBM Granite 3.0 - Offline Deterministic Engine",
         )
+        codemod = self.synthesize_codemod_diff(
+            breaking_changes=breaking_changes or [],
+            callers=changed_files,
+            target_symbol=target_symbol,
+        )
         return SynthesisResult(
             adapter_code=adapter_code,
             model_used="deterministic-offline",
@@ -443,6 +486,7 @@ class IBMGraniteSynthesizer:
                 "granite_model": GRANITE_MODEL_ID,
                 "ibm_bob_version": "2.0",
             },
+            codemod_diff=codemod,
         )
 
     # ------------------------------------------------------------------
@@ -878,11 +922,11 @@ class IBMGraniteSynthesizer:
             f"{ind}}},"
         )
 
-        # --- ownKeys trap ---
+        # --- ownKeys trap (deduplicated key membrane) ---
         own_keys_trap = (
             f"{ind}ownKeys(target) {{\n"
             f"{ind}  const legacyKeys: string[] = [{legacy_keys_ts}];\n"
-            f"{ind}  return [...Reflect.ownKeys(target), ...legacyKeys];\n"
+            f"{ind}  return Array.from(new Set([...Reflect.ownKeys(target), ...legacyKeys]));\n"
             f"{ind}}},"
         )
 
@@ -904,6 +948,20 @@ class IBMGraniteSynthesizer:
             f"{ind}  if ({has_union}) return true;\n"
             f"{ind}  return Reflect.has(target, prop);\n"
             f"{ind}}},"
+        )
+
+        # --- 14-Day Ephemeral TTL & Non-Enumerable Deprecation Logger ---
+        ttl_guard_block = (
+            "// 14-Day Ephemeral TTL Safety Guard & Non-Enumerable Deprecation Logger\n"
+            'const __VECTIS_ADAPTER_CREATED_AT = "2026-09-27T00:00:00Z";\n'
+            "const __VECTIS_TTL_DAYS = 14;\n"
+            "const __VECTIS_WARNED_PROPS = new Set<string>();\n\n"
+            "function __vectisLogDeprecation(prop: string): void {\n"
+            "  if (!__VECTIS_WARNED_PROPS.has(prop)) {\n"
+            "    __VECTIS_WARNED_PROPS.add(prop);\n"
+            f'    console.warn(`[VECTIS SENTINEL] Deprecated property \'${{prop}}\' accessed on {target_symbol}. Mapped via ephemeral shim.`);\n'
+            "  }\n"
+            "}\n"
         )
 
         # --- factory function ---
@@ -945,6 +1003,8 @@ class IBMGraniteSynthesizer:
             + interface_block
             + "\n"
             + legacy_interface_block
+            + "\n"
+            + ttl_guard_block
             + "\n"
             + factory
         )

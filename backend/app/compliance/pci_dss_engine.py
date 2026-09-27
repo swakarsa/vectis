@@ -471,14 +471,27 @@ def _rule_pan_exposure(
         field_desc, severity = detected_issue
         symbol = _extract_symbol_from_line(stripped)
         vid = _make_violation_id(RULE_PCI_3_4_2, ctx.file_path, symbol)
-        guidance = (
-            f"The {field_desc} '{symbol}' is exposed without tokenization in "
-            f"{ctx.file_path}. "
-            "Wrap it in a vault-tokenized reference or encrypt at rest. "
-            "Use the IBM Granite 3.0 `createBackwardCompatibilityProxy` shim "
-            "to preserve backward-compat while migrating to tokenized storage. "
-            "Reference: PCI-DSS v4.0.1 Req 3.4.2."
-        )
+        is_cvv = "CVV/CVC" in field_desc
+        if is_cvv:
+            guidance = (
+                f"The {field_desc} '{symbol}' is exposed in {ctx.file_path}. "
+                "PCI-DSS v4.0.1 Req 3.3.1 strictly forbids post-authorization retention "
+                "of Sensitive Authentication Data (SAD / CVV / CVC) under ANY circumstance, "
+                "even when encrypted. Remove this field immediately. "
+                "Reference: PCI-DSS v4.0.1 Req 3.3.1 & Req 3.4.2."
+            )
+            penalty = 100.0  # Prohibited SAD zero-retention is an immediate release gate block
+        else:
+            guidance = (
+                f"The {field_desc} '{symbol}' is exposed without tokenization in "
+                f"{ctx.file_path}. "
+                "Wrap it in a vault-tokenized reference or encrypt at rest. "
+                "Use the IBM Granite 3.0 `createBackwardCompatibilityProxy` shim "
+                "to preserve backward-compat while migrating to tokenized storage. "
+                "Reference: PCI-DSS v4.0.1 Req 3.4.2."
+            )
+            penalty = PENALTY_BY_SEVERITY[severity]
+
         violations.append(
             ComplianceViolation(
                 violation_id=vid,
@@ -489,7 +502,7 @@ def _rule_pan_exposure(
                 symbol_name=symbol,
                 raw_snippet=stripped[:200],
                 remediation_guidance=guidance,
-                penalty_score=PENALTY_BY_SEVERITY[severity],
+                penalty_score=penalty,
             )
         )
 

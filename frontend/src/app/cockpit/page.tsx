@@ -903,7 +903,7 @@ export default function VectisCockpitPage() {
 
   if (!mounted) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#08090a]">
+      <div className="h-[100dvh] w-screen flex items-center justify-center bg-[#08090a]">
         <div className="flex items-center gap-2.5 text-xs text-zinc-400">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="font-sans font-medium">Initializing Vectis Cockpit...</span>
@@ -913,7 +913,7 @@ export default function VectisCockpitPage() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#08090a] overflow-hidden select-none">
+    <div className="h-[100dvh] w-screen flex flex-col bg-[#08090a] overflow-hidden select-none">
       {/* Top Header */}
       <CockpitHeader
         verdict={verdict}
@@ -1195,6 +1195,7 @@ export default function VectisCockpitPage() {
             passportAvailable={shimApplied && Boolean(releasePassport)}
             onExportSecurityAudit={handleExportSecurityAudit}
             selectedNodeId={selectedNodeId}
+            onSelectNode={setSelectedNodeId}
           />
         </div>
       </div>

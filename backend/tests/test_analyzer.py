@@ -174,3 +174,71 @@ def test_parse_ts_contract_mutations_method_signature_mutation():
     assert m["mutation_type"] == "type_change"
     assert "Promise<boolean>" in m["new_signature"]
 
+
+def test_parse_ts_contract_mutations_generalized_rename():
+    detector = ASTChangeDetector(repo_path="")
+    base_source = """
+    export interface AccountConfig {
+        accountId: string;
+        billingEmail: string;
+    }
+    """
+    head_source = """
+    export interface AccountConfig {
+        accountUuid: string;
+        billingEmail: string;
+    }
+    """
+    mutations = detector._parse_ts_contract_mutations(
+        "src/config/account.ts", base_source, head_source
+    )
+    assert len(mutations) == 1
+    m = mutations[0]
+    assert "accountId" in m["symbol_name"]
+    assert "accountUuid" in m["new_signature"]
+    assert m["mutation_type"] == "field_removed"
+
+
+def test_parse_ts_contract_mutations_union_narrowing():
+    detector = ASTChangeDetector(repo_path="")
+    base_source = """
+    export interface Membership {
+        role: 'admin' | 'editor' | 'viewer';
+    }
+    """
+    head_source = """
+    export interface Membership {
+        role: 'admin' | 'editor';
+    }
+    """
+    mutations = detector._parse_ts_contract_mutations(
+        "src/auth/role.ts", base_source, head_source
+    )
+    assert len(mutations) == 1
+    m = mutations[0]
+    assert m["mutation_type"] == "type_change"
+    assert "viewer" in m["description"]
+
+
+def test_parse_py_contract_mutations():
+    detector = ASTChangeDetector(repo_path="")
+    base_py = """
+class TransactionPayload:
+    account_id: str
+    amount: float
+    currency: str
+"""
+    head_py = """
+class TransactionPayload:
+    account_id: str
+    amount: int
+"""
+    mutations = detector._parse_py_contract_mutations(
+        "services/billing/models.py", base_py, head_py
+    )
+    assert len(mutations) == 2
+    types = {m["mutation_type"] for m in mutations}
+    assert "field_removed" in types
+    assert "type_change" in types
+
+
